@@ -21,7 +21,6 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 * 1024 }
 });
 
-// ===== TOKEN GENERATE =====
 function generateToken() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%';
   let token = '';
@@ -34,23 +33,12 @@ function generateToken() {
   return token;
 }
 
-// ===== CREATE PASSWORD PROTECTED ZIP =====
-function createProtectedZip(fileBuffer, fileName, password) {
+function createPasswordZip(fileBuffer, fileName, password) {
   const zip = new AdmZip();
-  zip.addFile(fileName, fileBuffer);
-  const zipBuffer = zip.toBuffer();
-  
-  // Encrypt the zip buffer with AES using the password
-  const key = crypto.scryptSync(password, 'zencrypt_salt_v2', 32);
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
-  const encrypted = Buffer.concat([cipher.update(zipBuffer), cipher.final()]);
-  
-  // Store IV + encrypted data
-  return Buffer.concat([Buffer.from('ZENC'), iv, encrypted]);
+  zip.addFile(fileName, fileBuffer, '', password);
+  return zip.toBuffer();
 }
 
-// ===== B2 AUTH =====
 async function getB2Auth() {
   const credentials = Buffer.from(`${B2_KEY_ID}:${B2_APP_KEY}`).toString('base64');
   const res = await axios.get(
@@ -76,25 +64,18 @@ async function deleteFromB2(auth, b2FileName, fileId) {
       { fileName: b2FileName, fileId: fileId },
       { headers: { Authorization: auth.authorizationToken } }
     );
-    console.log(`Deleted: ${b2FileName}`);
   } catch (err) {
     console.error('Delete error:', err.message);
   }
 }
 
-// ===== API: GENERATE TOKEN =====
 app.get('/api/generate-token', (req, res) => {
   res.json({ token: generateToken() });
 });
 
-// ===== API: UPLOAD =====
 app.post('/api/upload', upload.single('file'), async (req, res) => {
   try {
-    const {
-      token, tokenPassword, filePassword,
-      expireSeconds, viewLimit, downloadLimit,
-      mysteryMode
-    } = req.body;
+    const { token, tokenPassword, filePassword, expireSeconds, viewLimit, downloadLimit, mysteryMode } = req.body;
     const file = req.file;
 
     if (!token || !tokenPassword || !file) {
@@ -103,18 +84,15 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
     const expire = Math.min(parseInt(expireSeconds) || 86400, 86400);
     const tokenPassHash = crypto.createHash('sha256').update(tokenPassword).digest('hex');
-    const filePassHash = filePassword
-      ? crypto.createHash('sha256').update(filePassword).digest('hex')
-      : null;
-
+    const filePassHash = filePassword ? crypto.createHash('sha256').update(filePassword).digest('hex') : null;
     const isMystery = mysteryMode === 'true';
 
     let uploadBuffer;
     let uploadFileName;
 
     if (isMystery && filePassword) {
-      uploadBuffer = createProtectedZip(file.buffer, file.originalname, filePassword);
-      uploadFileName = `${token}/zencrypt_pkg_${Date.now()}.zen`;
+      uploadBuffer = createPasswordZip(file.buffer, file.originalname, filePassword);
+      uploadFileName = `${token}/zencrypt_pkg_${Date.now()}.zip`;
     } else {
       uploadBuffer = file.buffer;
       uploadFileName = `${token}/${Date.now()}_${file.originalname}`;
@@ -170,7 +148,6 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// ===== API: VERIFY TOKEN =====
 app.post('/api/verify-token', (req, res) => {
   const { token, tokenPassword } = req.body;
   const data = tokenStore[token];
@@ -182,14 +159,10 @@ app.post('/api/verify-token', (req, res) => {
   }
 
   const hash = crypto.createHash('sha256').update(tokenPassword).digest('hex');
-  if (hash !== data.tokenPassHash) {
-    return res.status(401).json({ error: 'Wrong password' });
-  }
+  if (hash !== data.tokenPassHash) return res.status(401).json({ error: 'Wrong password' });
 
   if (data.viewLimit !== 'unlimited') {
-    if (data.viewCount >= data.viewLimit) {
-      return res.status(403).json({ error: 'View limit exceeded' });
-    }
+    if (data.viewCount >= data.viewLimit) return res.status(403).json({ error: 'View limit exceeded' });
     data.viewCount++;
   }
 
@@ -206,7 +179,6 @@ app.post('/api/verify-token', (req, res) => {
   });
 });
 
-// ===== API: DOWNLOAD =====
 app.post('/api/download', async (req, res) => {
   const { token, tokenPassword, filePassword } = req.body;
   const data = tokenStore[token];
@@ -214,23 +186,17 @@ app.post('/api/download', async (req, res) => {
   if (!data) return res.status(404).json({ error: 'Invalid token' });
   if (Date.now() > data.expireAt) return res.status(410).json({ error: 'Expired' });
 
-  if (data.downloadLimit !== 'unlimited') {
-    if (data.downloadCount >= data.downloadLimit) {
-      return res.status(410).json({ error: 'Download limit reached' });
-    }
+  if (data.downloadLimit !== 'unlimited' && data.downloadCount >= data.downloadLimit) {
+    return res.status(410).json({ error: 'Download limit reached' });
   }
 
   const tokenHash = crypto.createHash('sha256').update(tokenPassword).digest('hex');
-  if (tokenHash !== data.tokenPassHash) {
-    return res.status(401).json({ error: 'Wrong token password' });
-  }
+  if (tokenHash !== data.tokenPassHash) return res.status(401).json({ error: 'Wrong token password' });
 
   if (data.filePassHash) {
     if (!filePassword) return res.status(401).json({ error: 'File password required' });
     const fileHash = crypto.createHash('sha256').update(filePassword).digest('hex');
-    if (fileHash !== data.filePassHash) {
-      return res.status(401).json({ error: 'Wrong file password' });
-    }
+    if (fileHash !== data.filePassHash) return res.status(401).json({ error: 'Wrong file password' });
   }
 
   try {
@@ -242,30 +208,14 @@ app.post('/api/download', async (req, res) => {
       responseType: 'arraybuffer'
     });
 
-    // Decrypt if mystery mode
-    let responseBuffer = Buffer.from(fileRes.data);
-    
-    if (data.isMystery && data.filePassHash) {
-      const header = responseBuffer.slice(0, 4).toString();
-      if (header === 'ZENC') {
-        const iv = responseBuffer.slice(4, 20);
-        const encrypted = responseBuffer.slice(20);
-        const key = crypto.scryptSync(
-          req.body.filePassword, 'zencrypt_salt_v2', 32
-        );
-        const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-        responseBuffer = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-      }
-    }
-
     const downloadName = data.isMystery
       ? `zencrypt_${crypto.randomBytes(4).toString('hex')}.zip`
       : data.originalName;
 
     res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
-    res.setHeader('Content-Type', data.isMystery ? 'application/zip' : 'application/octet-stream');
+    res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.send(responseBuffer);
+    res.send(Buffer.from(fileRes.data));
 
     data.downloadCount++;
 
