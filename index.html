@@ -149,7 +149,6 @@ nav {
   cursor: not-allowed;
 }
 
-/* QR ICON */
 .qr-icon-wrap {
   display: flex;
   align-items: center;
@@ -171,16 +170,14 @@ nav {
   transition: all 0.2s;
 }
 
-.qr-icon-btn:hover {
-  background: rgba(108,99,255,0.3);
-}
+.qr-icon-btn:hover { background: rgba(108,99,255,0.3); }
 
 .qr-icon-label {
   font-size: 12px;
   color: rgba(255,255,255,0.4);
+  line-height: 1.5;
 }
 
-/* QR POPUP */
 .qr-popup-overlay {
   display: none;
   position: fixed;
@@ -192,9 +189,7 @@ nav {
   align-items: center;
 }
 
-.qr-popup-overlay.open {
-  display: flex;
-}
+.qr-popup-overlay.open { display: flex; }
 
 .qr-popup {
   background: #13131a;
@@ -235,10 +230,7 @@ nav {
   margin-bottom: 16px;
 }
 
-.qr-popup-actions {
-  display: flex;
-  gap: 10px;
-}
+.qr-popup-actions { display: flex; gap: 10px; }
 
 input, select {
   width: 100%;
@@ -286,9 +278,7 @@ select option { background: #13131a; }
   color: rgba(255,255,255,0.8);
 }
 
-.limit-row {
-  margin-bottom: 10px;
-}
+.limit-row { margin-bottom: 12px; }
 
 .limit-row label {
   font-size: 13px;
@@ -322,9 +312,7 @@ select option { background: #13131a; }
   color: #a29bff;
 }
 
-.custom-input {
-  display: none;
-}
+.custom-input { display: none; }
 
 .time-row {
   display: flex;
@@ -333,10 +321,7 @@ select option { background: #13131a; }
   margin-bottom: 10px;
 }
 
-.time-row input {
-  margin-bottom: 0;
-  flex: 1;
-}
+.time-row input { margin-bottom: 0; flex: 1; }
 
 .time-row span {
   color: rgba(255,255,255,0.4);
@@ -344,10 +329,63 @@ select option { background: #13131a; }
   white-space: nowrap;
 }
 
-.progress-wrap {
-  display: none;
+/* MYSTERY TOGGLE */
+.mystery-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(108,99,255,0.08);
+  border: 1px solid rgba(108,99,255,0.2);
+  border-radius: 12px;
+  padding: 14px 16px;
   margin-bottom: 12px;
 }
+
+.mystery-wrap .mystery-info h4 {
+  font-size: 14px;
+  color: #a29bff;
+  margin-bottom: 3px;
+}
+
+.mystery-wrap .mystery-info p {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+}
+
+.switch {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.1);
+  border-radius: 26px;
+  transition: 0.3s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+input:checked + .slider { background: #6c63ff; }
+input:checked + .slider:before { transform: translateX(20px); }
+
+.progress-wrap { display: none; margin-bottom: 12px; }
 
 .progress-bg {
   background: rgba(255,255,255,0.08);
@@ -414,9 +452,7 @@ select option { background: #13131a; }
   margin-bottom: 6px;
 }
 
-.info-row span:last-child {
-  color: rgba(255,255,255,0.8);
-}
+.info-row span:last-child { color: rgba(255,255,255,0.8); }
 
 .security-badge {
   display: flex;
@@ -446,13 +482,11 @@ footer {
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
   <div class="logo">⚡ Zencrypt</div>
-  <div style="font-size:12px;color:rgba(255,255,255,0.3)">🔐 AES-256 Encrypted</div>
+  <div style="font-size:12px;color:rgba(255,255,255,0.3)">🔐 Secure Transfer</div>
 </nav>
 
-<!-- TABS -->
 <div class="tabs">
   <button class="tab-btn active" onclick="showTab('send')" id="tab-send">📤 Send</button>
   <button class="tab-btn" onclick="showTab('receive')" id="tab-receive">📥 Receive</button>
@@ -461,40 +495,48 @@ footer {
 <!-- ========== SEND ========== -->
 <div class="section active" id="send-section">
 
-  <!-- Token -->
   <div class="card">
     <h3>🔑 Your Secure Token</h3>
-    <div class="token-display" id="tokenDisplay" title="Auto-generated, cannot be edited">-</div>
+    <div class="token-display" id="tokenDisplay">-</div>
     <div class="btn-row">
       <button class="btn btn-primary" onclick="generateToken()">🎲 New Token</button>
       <button class="btn btn-secondary" onclick="copyToken()">📋 Copy</button>
     </div>
     <div class="qr-icon-wrap">
-      <div class="qr-icon-btn" onclick="openQRPopup()" title="View QR Code">▦</div>
-      <div class="qr-icon-label">Tap to view QR Code<br>Receiver can scan this</div>
+      <div class="qr-icon-btn" onclick="openQRPopup()">▦</div>
+      <div class="qr-icon-label">Tap to view QR Code<br><span style="color:rgba(255,255,255,0.25)">Receiver can scan or upload</span></div>
     </div>
   </div>
 
-  <!-- File Upload -->
   <div class="card">
     <h3>📁 Select File</h3>
     <div class="upload-box" onclick="document.getElementById('fileInput').click()">
       <div class="icon">🔒</div>
       <p>Tap to select file</p>
-      <p style="margin-top:5px;font-size:11px;color:rgba(255,255,255,0.25)">Max 5GB • AES-256 encrypted before upload</p>
+      <p style="margin-top:5px;font-size:11px;color:rgba(255,255,255,0.25)">Max 5GB</p>
     </div>
     <input type="file" id="fileInput" onchange="onFileSelect(this)">
     <div class="file-info" id="fileInfo"></div>
   </div>
 
-  <!-- Security Settings -->
   <div class="card">
     <h3>⚙️ Security Settings</h3>
 
-    <input type="password" id="tokenPass" placeholder="🔐 Token Password (required)">
-    <input type="password" id="filePass" placeholder="🗝️ File Password (optional extra layer)">
+    <!-- Mystery Mode Toggle -->
+    <div class="mystery-wrap">
+      <div class="mystery-info">
+        <h4>🕵️ Mystery Mode</h4>
+        <p>File becomes password-protected ZIP<br>Contents hidden until unlocked</p>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="mysteryToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
 
-    <!-- Expire Time -->
+    <input type="password" id="tokenPass" placeholder="🔐 Token Password (required)">
+    <input type="password" id="filePass" placeholder="🗝️ File Password (for Mystery Mode)">
+
     <div class="limit-row">
       <label>⏳ Auto-delete after (max 24h)</label>
       <div class="time-row">
@@ -505,7 +547,6 @@ footer {
       </div>
     </div>
 
-    <!-- View Limit -->
     <div class="limit-row">
       <label>👁️ View Limit</label>
       <div class="limit-toggle">
@@ -515,7 +556,6 @@ footer {
       <input type="number" id="viewCustomInput" class="custom-input" placeholder="Enter max views..." min="1">
     </div>
 
-    <!-- Download Limit -->
     <div class="limit-row">
       <label>⬇️ Download Limit</label>
       <div class="limit-toggle">
@@ -527,22 +567,21 @@ footer {
 
   </div>
 
-  <!-- Progress -->
   <div class="progress-wrap" id="uploadProgress">
     <div class="progress-bg"><div class="progress-fill" id="uploadBar"></div></div>
-    <div class="progress-label" id="uploadLabel">Encrypting & uploading...</div>
+    <div class="progress-label" id="uploadLabel">Uploading...</div>
   </div>
 
   <div class="alert alert-error" id="sendError"></div>
   <div class="alert alert-success" id="sendSuccess"></div>
 
-  <button class="btn-success" onclick="sendFile()" id="sendBtn">🚀 Encrypt & Send</button>
+  <button class="btn-success" onclick="sendFile()" id="sendBtn">🚀 Send Secure Package</button>
 
   <div class="security-badge">
-    <span class="badge">🔐 AES-256</span>
+    <span class="badge">🔐 Encrypted</span>
     <span class="badge">👻 No Account</span>
     <span class="badge">🗑️ Auto Delete</span>
-    <span class="badge">📦 Mystery Box</span>
+    <span class="badge">🕵️ Mystery Mode</span>
     <span class="badge">🚫 No Logs</span>
   </div>
 
@@ -576,12 +615,13 @@ footer {
     <div class="info-row"><span>⏱️ Expires</span><span id="readyExpire">-</span></div>
     <div class="info-row"><span>👁️ Views</span><span id="readyViews">-</span></div>
     <div class="info-row"><span>⬇️ Downloads</span><span id="readyDownloads">-</span></div>
+    <div class="info-row"><span>🕵️ Mode</span><span id="readyMode">-</span></div>
     <br>
     <input type="password" id="downloadFilePass" placeholder="🗝️ File password (if required)" style="display:none">
     <p style="font-size:11px;color:rgba(255,107,107,0.6);margin-bottom:10px;text-align:center">
-      ⚠️ File deletes from cloud 5 seconds after last download
+      ⚠️ File deletes from cloud 5s after last download
     </p>
-    <button class="btn-success" onclick="downloadFile()">⬇️ Download Encrypted Package</button>
+    <button class="btn-success" onclick="downloadFile()">⬇️ Download Package</button>
   </div>
 
 </div>
@@ -594,15 +634,15 @@ footer {
     <p>Receiver can scan or upload this image</p>
     <div id="qrPopupCode"></div>
     <div class="qr-popup-actions">
-      <button class="btn btn-primary" onclick="downloadQR()">⬇️ Save QR</button>
+      <button class="btn btn-primary" onclick="downloadQR()">⬇️ Save</button>
       <button class="btn btn-secondary" onclick="shareQR()">📤 Share</button>
     </div>
   </div>
 </div>
 
 <footer>
-  <p>© 2026 Zencrypt · End-to-end encrypted file transfer</p>
-  <p style="margin-top:5px">Files are encrypted before upload. We never see your content.</p>
+  <p>© 2026 Zencrypt · Secure file transfer</p>
+  <p style="margin-top:5px">Your files are protected. We never see your content.</p>
 </footer>
 
 <script>
@@ -613,7 +653,6 @@ let verifiedTokenData = null;
 let viewMode = 'unlimited';
 let dlMode = 'unlimited';
 
-// ===== TABS =====
 function showTab(tab) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -621,7 +660,6 @@ function showTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
 }
 
-// ===== LIMIT TOGGLE =====
 function setLimit(type, mode) {
   if (type === 'view') {
     viewMode = mode;
@@ -636,28 +674,21 @@ function setLimit(type, mode) {
   }
 }
 
-// ===== TOKEN =====
 async function generateToken() {
   try {
     const res = await fetch(`${API}/api/generate-token`);
     const data = await res.json();
     currentToken = data.token;
   } catch {
-    currentToken = generateLocalToken();
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%';
+    let token = '';
+    for (let i = 0; i < 4; i++) {
+      if (i > 0) token += '-';
+      for (let j = 0; j < 6; j++) token += chars[Math.floor(Math.random() * chars.length)];
+    }
+    currentToken = token;
   }
   document.getElementById('tokenDisplay').textContent = currentToken;
-}
-
-function generateLocalToken() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%';
-  let token = '';
-  for (let i = 0; i < 4; i++) {
-    if (i > 0) token += '-';
-    for (let j = 0; j < 6; j++) {
-      token += chars[Math.floor(Math.random() * chars.length)];
-    }
-  }
-  return token;
 }
 
 function copyToken() {
@@ -666,12 +697,8 @@ function copyToken() {
   alert('Token copied!');
 }
 
-// ===== QR POPUP =====
 function openQRPopup() {
-  if (!currentToken || currentToken === '-') {
-    alert('Generate a token first!');
-    return;
-  }
+  if (!currentToken || currentToken === '-') { alert('Generate a token first!'); return; }
   const qrDiv = document.getElementById('qrPopupCode');
   qrDiv.innerHTML = '';
   new QRCode(qrDiv, {
@@ -705,14 +732,13 @@ function downloadQR() {
 
 function shareQR() {
   if (navigator.share) {
-    navigator.share({ title: 'Zencrypt Token', text: `My Zencrypt token: ${currentToken}` });
+    navigator.share({ title: 'Zencrypt Token', text: `Zencrypt token: ${currentToken}` });
   } else {
     navigator.clipboard.writeText(currentToken);
-    alert('Token copied to clipboard!');
+    alert('Token copied!');
   }
 }
 
-// ===== FILE SELECT =====
 function onFileSelect(input) {
   if (!input.files.length) return;
   const file = input.files[0];
@@ -729,17 +755,18 @@ function formatSize(b) {
   return (b/1073741824).toFixed(1) + ' GB';
 }
 
-// ===== SEND =====
 async function sendFile() {
   const file = document.getElementById('fileInput').files[0];
   const tokenPass = document.getElementById('tokenPass').value;
   const filePass = document.getElementById('filePass').value;
   const hours = parseInt(document.getElementById('expireHours').value) || 0;
   const minutes = parseInt(document.getElementById('expireMinutes').value) || 0;
+  const mysteryMode = document.getElementById('mysteryToggle').checked;
 
   if (!currentToken || currentToken === '-') { showAlert('sendError', 'Generate a token first!'); return; }
   if (!file) { showAlert('sendError', 'Select a file first!'); return; }
   if (!tokenPass) { showAlert('sendError', 'Token password is required!'); return; }
+  if (mysteryMode && !filePass) { showAlert('sendError', 'File password required for Mystery Mode!'); return; }
 
   let expireSeconds = (hours * 3600) + (minutes * 60);
   if (expireSeconds <= 0 || expireSeconds > 86400) expireSeconds = 86400;
@@ -755,6 +782,7 @@ async function sendFile() {
   formData.append('expireSeconds', expireSeconds);
   formData.append('viewLimit', viewLimit);
   formData.append('downloadLimit', downloadLimit);
+  formData.append('mysteryMode', mysteryMode.toString());
 
   document.getElementById('sendBtn').disabled = true;
   document.getElementById('uploadProgress').style.display = 'block';
@@ -764,7 +792,7 @@ async function sendFile() {
     if (e.lengthComputable) {
       const pct = Math.round((e.loaded / e.total) * 100);
       document.getElementById('uploadBar').style.width = pct + '%';
-      document.getElementById('uploadLabel').textContent = `Encrypting & uploading... ${pct}%`;
+      document.getElementById('uploadLabel').textContent = `Uploading... ${pct}%`;
     }
   };
 
@@ -774,7 +802,7 @@ async function sendFile() {
     try {
       const res = JSON.parse(xhr.responseText);
       if (res.success) {
-        showAlert('sendSuccess', '✅ Package encrypted & uploaded! Share the token.');
+        showAlert('sendSuccess', '✅ Package uploaded! Share the token with receiver.');
       } else {
         showAlert('sendError', res.error || 'Upload failed!');
       }
@@ -793,7 +821,6 @@ async function sendFile() {
   xhr.send(formData);
 }
 
-// ===== QR IMAGE SCAN =====
 function readQRImage(input) {
   if (!input.files.length) return;
   const reader = new FileReader();
@@ -819,7 +846,6 @@ function readQRImage(input) {
   reader.readAsDataURL(input.files[0]);
 }
 
-// ===== RECEIVE =====
 function searchToken() {
   const token = document.getElementById('tokenInput').value.trim();
   if (!token) { showAlert('receiveError', 'Enter a token!'); return; }
@@ -855,12 +881,9 @@ function showFileReady(data) {
   document.getElementById('fileReady').style.display = 'block';
   document.getElementById('readyFileSize').textContent = formatSize(data.fileSize);
   document.getElementById('readyExpire').textContent = new Date(data.expireAt).toLocaleString();
-  document.getElementById('readyViews').textContent = data.viewLimit === 'unlimited'
-    ? '∞ Unlimited'
-    : `${data.viewCount} / ${data.viewLimit}`;
-  document.getElementById('readyDownloads').textContent = data.downloadLimit === 'unlimited'
-    ? '∞ Unlimited'
-    : `${data.downloadCount} / ${data.downloadLimit}`;
+  document.getElementById('readyViews').textContent = data.viewLimit === 'unlimited' ? '∞' : `${data.viewCount}/${data.viewLimit}`;
+  document.getElementById('readyDownloads').textContent = data.downloadLimit === 'unlimited' ? '∞' : `${data.downloadCount}/${data.downloadLimit}`;
+  document.getElementById('readyMode').textContent = data.isMystery ? '🕵️ Mystery (Password Protected ZIP)' : '📂 Normal';
   if (data.hasFilePassword) {
     document.getElementById('downloadFilePass').style.display = 'block';
   }
@@ -887,11 +910,13 @@ async function downloadFile() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `zencrypt_pkg_${Date.now()}.bin`;
+    a.download = verifiedTokenData?.isMystery
+      ? `zencrypt_pkg_${Date.now()}.zip`
+      : `zencrypt_file_${Date.now()}`;
     a.click();
     URL.revokeObjectURL(url);
 
-    showAlert('receiveSuccess', '✅ Downloaded! File will be deleted from cloud in 5 seconds.');
+    showAlert('receiveSuccess', '✅ Downloaded! File deletes from cloud in 5 seconds.');
     document.getElementById('fileReady').style.display = 'none';
 
   } catch {
@@ -899,7 +924,6 @@ async function downloadFile() {
   }
 }
 
-// ===== HELPERS =====
 function showAlert(id, msg) {
   const el = document.getElementById(id);
   el.textContent = msg;
