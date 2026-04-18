@@ -3,14 +3,7 @@ const multer = require('multer');
 const crypto = require('crypto');
 const axios = require('axios');
 const cors = require('cors');
-const archiver = require('archiver');
-const { PassThrough } = require('stream');
-
-// Fix for archiver-zip-encrypted
-const zipEncrypted = const zipEncrypted = const zipEncrypted = require('archiver-zip-encrypted');
-archiver.registerFormat('zip-encrypted', zipEncrypted);
-archiver.registerFormat('zip-encrypted', zipEncrypted);
-archiver.registerFormat('zip-encrypted', zipEncrypted);
+const JSZip = require('jszip');
 
 const app = express();
 app.use(cors());
@@ -42,26 +35,20 @@ function generateToken() {
 }
 
 // ===== CREATE PASSWORD PROTECTED ZIP =====
-function createEncryptedZip(fileBuffer, fileName, password) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    const passThrough = new PassThrough();
-
-    passThrough.on('data', chunk => chunks.push(chunk));
-    passThrough.on('end', () => resolve(Buffer.concat(chunks)));
-    passThrough.on('error', reject);
-
-    const archive = archiver.create('zip-encrypted', {
-      zlib: { level: 8 },
-      encryptionMethod: 'aes256',
-      password: password
-    });
-
-    archive.on('error', reject);
-    archive.pipe(passThrough);
-    archive.append(fileBuffer, { name: fileName });
-    archive.finalize();
+async function createProtectedZip(fileBuffer, fileName, password) {
+  const zip = new JSZip();
+  zip.file(fileName, fileBuffer);
+  const zipBuffer = await zip.generateAsync({
+    type: 'nodebuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 }
   });
+  // Encrypt zip with AES-256
+  const key = crypto.scryptSync(password, 'zencrypt_zip_salt', 32);
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  const encrypted = Buffer.concat([cipher.update(zipBuffer), cipher.final()]);
+  return Buffer.concat([iv, encrypted]);
 }
 
 // ===== B2 AUTH =====
@@ -125,21 +112,15 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
     let uploadBuffer;
     let uploadFileName;
-    let uploadMime;
 
     if (isMystery && filePassword) {
-      // Create password protected ZIP
-      uploadBuffer = await createEncryptedZip(file.buffer, file.originalname, filePassword);
-      uploadFileName = `${token}/zencrypt_pkg_${Date.now()}.zip`;
-      uploadMime = 'application/zip';
+      uploadBuffer = await createProtectedZip(file.buffer, file.originalname, filePassword);
+      uploadFileName = `${token}/zencrypt_pkg_${Date.now()}.zen`;
     } else {
-      // Normal upload
       uploadBuffer = file.buffer;
       uploadFileName = `${token}/${Date.now()}_${file.originalname}`;
-      uploadMime = file.mimetype;
     }
 
-    // Upload to B2
     const auth = await getB2Auth();
     const uploadUrl = await getUploadUrl(auth.authorizationToken, auth.apiUrl);
     const sha1 = crypto.createHash('sha1').update(uploadBuffer).digest('hex');
@@ -148,7 +129,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       headers: {
         Authorization: uploadUrl.authorizationToken,
         'X-Bz-File-Name': encodeURIComponent(uploadFileName),
-        'Content-Type': uploadMime,
+        'Content-Type': 'application/octet-stream',
         'Content-Length': uploadBuffer.length,
         'X-Bz-Content-Sha1': sha1,
       },
@@ -167,7 +148,6 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       fileId: uploadRes.data.fileId,
       expireAt,
       isMystery,
-      uploadMime,
       viewLimit: viewLimit === 'unlimited' ? 'unlimited' : parseInt(viewLimit) || 1,
       downloadLimit: downloadLimit === 'unlimited' ? 'unlimited' : parseInt(downloadLimit) || 1,
       viewCount: 0,
@@ -175,13 +155,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       createdAt: Date.now()
     };
 
-    // Auto delete on expiry
     setTimeout(async () => {
       if (tokenStore[token]) {
         const a = await getB2Auth();
         await deleteFromB2(a, tokenStore[token].b2FileName, tokenStore[token].fileId);
         delete tokenStore[token];
-        console.log(`Token ${token} expired`);
       }
     }, expire * 1000);
 
@@ -239,7 +217,7 @@ app.post('/api/download', async (req, res) => {
 
   if (data.downloadLimit !== 'unlimited') {
     if (data.downloadCount >= data.downloadLimit) {
-      return res.status(410).json({ error: 'Download limit reached. File deleted.' });
+      return res.status(410).json({ error: 'Download limit reached' });
     }
   }
 
@@ -265,29 +243,22 @@ app.post('/api/download', async (req, res) => {
       responseType: 'arraybuffer'
     });
 
-    // Set download filename
-    let downloadName;
-    if (data.isMystery) {
-      downloadName = `zencrypt_pkg_${crypto.randomBytes(6).toString('hex')}.zip`;
-    } else {
-      downloadName = data.originalName;
-    }
+    const downloadName = data.isMystery
+      ? `zencrypt_pkg_${crypto.randomBytes(6).toString('hex')}.zen`
+      : data.originalName;
 
     res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
-    res.setHeader('Content-Type', data.isMystery ? 'application/zip' : data.uploadMime);
+    res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.send(Buffer.from(fileRes.data));
 
-    // Update download count
     data.downloadCount++;
 
-    // Delete if download limit reached
     if (data.downloadLimit !== 'unlimited' && data.downloadCount >= data.downloadLimit) {
       setTimeout(async () => {
         const a = await getB2Auth();
         await deleteFromB2(a, data.b2FileName, data.fileId);
         delete tokenStore[token];
-        console.log(`Token ${token} deleted after download limit`);
       }, 5000);
     }
 
