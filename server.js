@@ -3,7 +3,7 @@ const multer = require('multer');
 const crypto = require('crypto');
 const axios = require('axios');
 const cors = require('cors');
-const JSZip = require('jszip');
+const AdmZip = require('adm-zip');
 
 const app = express();
 app.use(cors());
@@ -35,20 +35,19 @@ function generateToken() {
 }
 
 // ===== CREATE PASSWORD PROTECTED ZIP =====
-async function createProtectedZip(fileBuffer, fileName, password) {
-  const zip = new JSZip();
-  zip.file(fileName, fileBuffer);
-  const zipBuffer = await zip.generateAsync({
-    type: 'nodebuffer',
-    compression: 'DEFLATE',
-    compressionOptions: { level: 6 }
-  });
-  // Encrypt zip with AES-256
-  const key = crypto.scryptSync(password, 'zencrypt_zip_salt', 32);
+function createProtectedZip(fileBuffer, fileName, password) {
+  const zip = new AdmZip();
+  zip.addFile(fileName, fileBuffer);
+  const zipBuffer = zip.toBuffer();
+  
+  // Encrypt the zip buffer with AES using the password
+  const key = crypto.scryptSync(password, 'zencrypt_salt_v2', 32);
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
   const encrypted = Buffer.concat([cipher.update(zipBuffer), cipher.final()]);
-  return Buffer.concat([iv, encrypted]);
+  
+  // Store IV + encrypted data
+  return Buffer.concat([Buffer.from('ZENC'), iv, encrypted]);
 }
 
 // ===== B2 AUTH =====
@@ -114,7 +113,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     let uploadFileName;
 
     if (isMystery && filePassword) {
-      uploadBuffer = await createProtectedZip(file.buffer, file.originalname, filePassword);
+      uploadBuffer = createProtectedZip(file.buffer, file.originalname, filePassword);
       uploadFileName = `${token}/zencrypt_pkg_${Date.now()}.zen`;
     } else {
       uploadBuffer = file.buffer;
@@ -243,14 +242,30 @@ app.post('/api/download', async (req, res) => {
       responseType: 'arraybuffer'
     });
 
+    // Decrypt if mystery mode
+    let responseBuffer = Buffer.from(fileRes.data);
+    
+    if (data.isMystery && data.filePassHash) {
+      const header = responseBuffer.slice(0, 4).toString();
+      if (header === 'ZENC') {
+        const iv = responseBuffer.slice(4, 20);
+        const encrypted = responseBuffer.slice(20);
+        const key = crypto.scryptSync(
+          req.body.filePassword, 'zencrypt_salt_v2', 32
+        );
+        const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+        responseBuffer = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+      }
+    }
+
     const downloadName = data.isMystery
-      ? `zencrypt_pkg_${crypto.randomBytes(6).toString('hex')}.zen`
+      ? `zencrypt_${crypto.randomBytes(4).toString('hex')}.zip`
       : data.originalName;
 
     res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
-    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Type', data.isMystery ? 'application/zip' : 'application/octet-stream');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.send(Buffer.from(fileRes.data));
+    res.send(responseBuffer);
 
     data.downloadCount++;
 
