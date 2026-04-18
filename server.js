@@ -7,7 +7,10 @@ const archiver = require('archiver');
 const { PassThrough } = require('stream');
 
 // Fix for archiver-zip-encrypted
-require('archiver-zip-encrypted');
+const zipEncrypted = const zipEncrypted = const zipEncrypted = require('archiver-zip-encrypted');
+archiver.registerFormat('zip-encrypted', zipEncrypted);
+archiver.registerFormat('zip-encrypted', zipEncrypted);
+archiver.registerFormat('zip-encrypted', zipEncrypted);
 
 const app = express();
 app.use(cors());
