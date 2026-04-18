@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Zencrypt - Secure File Transfer</title>
+<meta name="description" content="Send files securely with end-to-end encryption. No account needed. Files auto-delete after set time.">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -34,16 +36,6 @@ nav {
   background: linear-gradient(135deg, #6c63ff, #00d4ff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-.lang-selector {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: #fff;
-  padding: 7px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
 }
 
 .tabs {
@@ -76,7 +68,7 @@ nav {
   display: none;
   max-width: 500px;
   margin: 24px auto;
-  padding: 0 20px;
+  padding: 0 20px 40px;
 }
 
 .section.active { display: block; }
@@ -100,13 +92,14 @@ nav {
   border: 1px solid rgba(108,99,255,0.3);
   border-radius: 10px;
   padding: 14px 16px;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   color: #a29bff;
   text-align: center;
   word-break: break-all;
   margin-bottom: 12px;
+  user-select: none;
 }
 
 .btn-row {
@@ -144,24 +137,110 @@ nav {
   width: 100%;
   padding: 14px;
   font-size: 15px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  margin-top: 4px;
 }
 
-.btn-danger {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-  color: #fff;
+.btn-success:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-#qrcode {
+/* QR ICON */
+.qr-icon-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.qr-icon-btn {
+  width: 48px;
+  height: 48px;
+  background: rgba(108,99,255,0.15);
+  border: 1px solid rgba(108,99,255,0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  transition: all 0.2s;
+}
+
+.qr-icon-btn:hover {
+  background: rgba(108,99,255,0.3);
+}
+
+.qr-icon-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+}
+
+/* QR POPUP */
+.qr-popup-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85);
+  z-index: 999;
+  justify-content: center;
+  align-items: center;
+}
+
+.qr-popup-overlay.open {
+  display: flex;
+}
+
+.qr-popup {
+  background: #13131a;
+  border: 1px solid rgba(108,99,255,0.3);
+  border-radius: 20px;
+  padding: 28px 24px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+  position: relative;
+}
+
+.qr-popup h3 {
+  font-size: 16px;
+  margin-bottom: 6px;
+  color: #a29bff;
+}
+
+.qr-popup p {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 16px;
+}
+
+.qr-popup-close {
+  position: absolute;
+  top: 14px; right: 16px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+#qrPopupCode {
   display: flex;
   justify-content: center;
-  padding: 10px 0;
+  margin-bottom: 16px;
 }
 
-#qrcode canvas, #qrcode img {
-  border-radius: 10px;
+.qr-popup-actions {
+  display: flex;
+  gap: 10px;
 }
 
-input, select, textarea {
+input, select {
   width: 100%;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.1);
@@ -170,14 +249,16 @@ input, select, textarea {
   border-radius: 10px;
   font-size: 14px;
   margin-bottom: 10px;
+  outline: none;
 }
 
 input::placeholder { color: rgba(255,255,255,0.3); }
+select option { background: #13131a; }
 
 .upload-box {
   border: 2px dashed rgba(108,99,255,0.4);
   border-radius: 14px;
-  padding: 30px;
+  padding: 28px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s;
@@ -189,10 +270,10 @@ input::placeholder { color: rgba(255,255,255,0.3); }
   background: rgba(108,99,255,0.06);
 }
 
-.upload-box .icon { font-size: 40px; margin-bottom: 10px; }
+.upload-box .icon { font-size: 36px; margin-bottom: 8px; }
 .upload-box p { color: rgba(255,255,255,0.5); font-size: 13px; }
 
-#fileInput { display: none; }
+#fileInput, #qrImageInput { display: none; }
 
 .file-info {
   display: none;
@@ -205,9 +286,67 @@ input::placeholder { color: rgba(255,255,255,0.3); }
   color: rgba(255,255,255,0.8);
 }
 
+.limit-row {
+  margin-bottom: 10px;
+}
+
+.limit-row label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.limit-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 9px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background: rgba(108,99,255,0.2);
+  border-color: rgba(108,99,255,0.5);
+  color: #a29bff;
+}
+
+.custom-input {
+  display: none;
+}
+
+.time-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.time-row input {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.time-row span {
+  color: rgba(255,255,255,0.4);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 .progress-wrap {
   display: none;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .progress-bg {
@@ -231,18 +370,6 @@ input::placeholder { color: rgba(255,255,255,0.3); }
   font-size: 13px;
   color: rgba(255,255,255,0.5);
 }
-
-.result-card {
-  display: none;
-  background: rgba(0,212,255,0.06);
-  border: 1px solid rgba(0,212,255,0.2);
-  border-radius: 14px;
-  padding: 20px;
-  text-align: center;
-  margin-bottom: 16px;
-}
-
-.result-card h3 { color: #00d4ff; margin-bottom: 10px; }
 
 .alert {
   padding: 12px 16px;
@@ -273,13 +400,39 @@ input::placeholder { color: rgba(255,255,255,0.3); }
   margin-bottom: 12px;
 }
 
-.file-ready h4 { margin-bottom: 8px; font-size: 15px; }
-.file-ready p { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+.file-ready h4 {
+  margin-bottom: 10px;
+  font-size: 15px;
+  color: #a29bff;
+}
 
-.expire-timer {
-  font-size: 12px;
-  color: rgba(255,107,107,0.8);
-  margin-top: 6px;
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 6px;
+}
+
+.info-row span:last-child {
+  color: rgba(255,255,255,0.8);
+}
+
+.security-badge {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  justify-content: center;
+}
+
+.badge {
+  background: rgba(108,99,255,0.12);
+  border: 1px solid rgba(108,99,255,0.25);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 11px;
+  color: #a29bff;
 }
 
 footer {
@@ -287,27 +440,16 @@ footer {
   padding: 30px;
   color: rgba(255,255,255,0.2);
   font-size: 12px;
-  margin-top: 20px;
-}
-
-@media(max-width: 480px) {
-  .token-display { font-size: 14px; letter-spacing: 1px; }
+  border-top: 1px solid rgba(255,255,255,0.05);
 }
 </style>
 </head>
 <body>
 
+<!-- NAV -->
 <nav>
   <div class="logo">⚡ Zencrypt</div>
-  <select class="lang-selector" onchange="changeLang(this.value)">
-    <option value="en">🌐 EN</option>
-    <option value="bn">🇧🇩 বাংলা</option>
-    <option value="hi">🇮🇳 हिंदी</option>
-    <option value="ar">🇸🇦 AR</option>
-    <option value="es">🇪🇸 ES</option>
-    <option value="fr">🇫🇷 FR</option>
-    <option value="zh">🇨🇳 中文</option>
-  </select>
+  <div style="font-size:12px;color:rgba(255,255,255,0.3)">🔐 AES-256 Encrypted</div>
 </nav>
 
 <!-- TABS -->
@@ -316,181 +458,162 @@ footer {
   <button class="tab-btn" onclick="showTab('receive')" id="tab-receive">📥 Receive</button>
 </div>
 
-<!-- ========== SEND SECTION ========== -->
+<!-- ========== SEND ========== -->
 <div class="section active" id="send-section">
 
-  <!-- Token Box -->
+  <!-- Token -->
   <div class="card">
-    <h3 data-i18n="tokenTitle">🔑 Your Secure Token</h3>
-    <div class="token-display" id="tokenDisplay">-</div>
+    <h3>🔑 Your Secure Token</h3>
+    <div class="token-display" id="tokenDisplay" title="Auto-generated, cannot be edited">-</div>
     <div class="btn-row">
-      <button class="btn btn-primary" onclick="generateToken()" data-i18n="generateBtn">🎲 Generate</button>
-      <button class="btn btn-secondary" onclick="copyToken()" data-i18n="copyTokenBtn">📋 Copy</button>
+      <button class="btn btn-primary" onclick="generateToken()">🎲 New Token</button>
+      <button class="btn btn-secondary" onclick="copyToken()">📋 Copy</button>
     </div>
-  </div>
-
-  <!-- QR Code -->
-  <div class="card" id="qrCard" style="display:none">
-    <h3 data-i18n="qrTitle">📱 QR Code (Receiver can scan this)</h3>
-    <div id="qrcode"></div>
+    <div class="qr-icon-wrap">
+      <div class="qr-icon-btn" onclick="openQRPopup()" title="View QR Code">▦</div>
+      <div class="qr-icon-label">Tap to view QR Code<br>Receiver can scan this</div>
+    </div>
   </div>
 
   <!-- File Upload -->
   <div class="card">
-    <h3 data-i18n="uploadTitle">📁 Upload File</h3>
+    <h3>📁 Select File</h3>
     <div class="upload-box" onclick="document.getElementById('fileInput').click()">
       <div class="icon">🔒</div>
-      <p data-i18n="uploadSub">Tap to select file • Max 5GB</p>
+      <p>Tap to select file</p>
+      <p style="margin-top:5px;font-size:11px;color:rgba(255,255,255,0.25)">Max 5GB • AES-256 encrypted before upload</p>
     </div>
     <input type="file" id="fileInput" onchange="onFileSelect(this)">
     <div class="file-info" id="fileInfo"></div>
   </div>
 
-  <!-- Passwords & Expiry -->
+  <!-- Security Settings -->
   <div class="card">
-    <h3 data-i18n="settingsTitle">⚙️ Security Settings</h3>
-    <input type="password" id="tokenPass" placeholder="🔐 Token Password (to unlock token)" data-i18n-placeholder="tokenPassPlaceholder">
-    <input type="password" id="filePass" placeholder="🗝️ File Password (to open file)" data-i18n-placeholder="filePassPlaceholder">
-    <select id="expireTime">
-      <option value="3600">⏳ 1 Hour</option>
-      <option value="21600">⏳ 6 Hours</option>
-      <option value="86400" selected>⏳ 24 Hours</option>
-      <option value="259200">⏳ 3 Days</option>
-      <option value="604800">⏳ 7 Days</option>
-    </select>
+    <h3>⚙️ Security Settings</h3>
+
+    <input type="password" id="tokenPass" placeholder="🔐 Token Password (required)">
+    <input type="password" id="filePass" placeholder="🗝️ File Password (optional extra layer)">
+
+    <!-- Expire Time -->
+    <div class="limit-row">
+      <label>⏳ Auto-delete after (max 24h)</label>
+      <div class="time-row">
+        <input type="number" id="expireHours" placeholder="0" min="0" max="24" value="24">
+        <span>hours</span>
+        <input type="number" id="expireMinutes" placeholder="0" min="0" max="59" value="0">
+        <span>min</span>
+      </div>
+    </div>
+
+    <!-- View Limit -->
+    <div class="limit-row">
+      <label>👁️ View Limit</label>
+      <div class="limit-toggle">
+        <button class="toggle-btn active" id="viewUnlimitedBtn" onclick="setLimit('view','unlimited')">♾️ Unlimited</button>
+        <button class="toggle-btn" id="viewCustomBtn" onclick="setLimit('view','custom')">🔢 Custom</button>
+      </div>
+      <input type="number" id="viewCustomInput" class="custom-input" placeholder="Enter max views..." min="1">
+    </div>
+
+    <!-- Download Limit -->
+    <div class="limit-row">
+      <label>⬇️ Download Limit</label>
+      <div class="limit-toggle">
+        <button class="toggle-btn active" id="dlUnlimitedBtn" onclick="setLimit('dl','unlimited')">♾️ Unlimited</button>
+        <button class="toggle-btn" id="dlCustomBtn" onclick="setLimit('dl','custom')">🔢 Custom</button>
+      </div>
+      <input type="number" id="dlCustomInput" class="custom-input" placeholder="Enter max downloads..." min="1">
+    </div>
+
   </div>
 
   <!-- Progress -->
   <div class="progress-wrap" id="uploadProgress">
     <div class="progress-bg"><div class="progress-fill" id="uploadBar"></div></div>
-    <div class="progress-label" id="uploadLabel">Uploading...</div>
+    <div class="progress-label" id="uploadLabel">Encrypting & uploading...</div>
   </div>
 
-  <!-- Alert -->
   <div class="alert alert-error" id="sendError"></div>
   <div class="alert alert-success" id="sendSuccess"></div>
 
-  <!-- Send Button -->
-  <button class="btn btn-success" onclick="sendFile()" id="sendBtn" data-i18n="sendBtn">🚀 Encrypt & Send</button>
+  <button class="btn-success" onclick="sendFile()" id="sendBtn">🚀 Encrypt & Send</button>
+
+  <div class="security-badge">
+    <span class="badge">🔐 AES-256</span>
+    <span class="badge">👻 No Account</span>
+    <span class="badge">🗑️ Auto Delete</span>
+    <span class="badge">📦 Mystery Box</span>
+    <span class="badge">🚫 No Logs</span>
+  </div>
 
 </div>
 
-<!-- ========== RECEIVE SECTION ========== -->
+<!-- ========== RECEIVE ========== -->
 <div class="section" id="receive-section">
 
   <div class="card">
-    <h3 data-i18n="receiveTitle">🔍 Enter Token</h3>
-    <input type="text" id="tokenInput" placeholder="Enter 24-digit token..." data-i18n-placeholder="tokenInputPlaceholder">
+    <h3>🔍 Find Package</h3>
+    <input type="text" id="tokenInput" placeholder="Paste token here...">
     <div class="btn-row">
-      <button class="btn btn-primary" onclick="searchToken()" data-i18n="searchBtn">🔍 Search</button>
-      <button class="btn btn-secondary" onclick="scanQR()" data-i18n="scanBtn">📷 Scan QR</button>
+      <button class="btn btn-primary" onclick="searchToken()">🔍 Search</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('qrImageInput').click()">🖼️ Upload QR</button>
     </div>
+    <input type="file" id="qrImageInput" accept="image/*" onchange="readQRImage(this)">
   </div>
 
-  <!-- Token Password -->
   <div class="card" id="tokenUnlockCard" style="display:none">
-    <h3 data-i18n="unlockTitle">🔐 Unlock Token</h3>
+    <h3>🔐 Unlock Package</h3>
     <input type="password" id="receiveTokenPass" placeholder="Enter token password...">
-    <button class="btn btn-primary" style="width:100%" onclick="unlockToken()" data-i18n="unlockBtn">🔓 Unlock</button>
+    <button class="btn btn-primary" style="width:100%;padding:12px;border:none;border-radius:10px;cursor:pointer;font-weight:700" onclick="unlockToken()">🔓 Unlock</button>
   </div>
 
-  <!-- Alert -->
   <div class="alert alert-error" id="receiveError"></div>
   <div class="alert alert-success" id="receiveSuccess"></div>
 
-  <!-- File Ready -->
   <div class="file-ready" id="fileReady">
-    <h4>📦 <span id="readyFileName"></span></h4>
-    <p>📏 Size: <span id="readyFileSize"></span></p>
-    <p class="expire-timer">⏱️ Expires: <span id="readyExpire"></span></p>
+    <h4>📦 Package Unlocked</h4>
+    <div class="info-row"><span>📏 Size</span><span id="readyFileSize">-</span></div>
+    <div class="info-row"><span>⏱️ Expires</span><span id="readyExpire">-</span></div>
+    <div class="info-row"><span>👁️ Views</span><span id="readyViews">-</span></div>
+    <div class="info-row"><span>⬇️ Downloads</span><span id="readyDownloads">-</span></div>
     <br>
-    <input type="password" id="downloadFilePass" placeholder="🗝️ Enter file password to download..." style="display:none">
-    <button class="btn btn-success" style="margin-top:8px" onclick="downloadFile()" data-i18n="downloadBtn">⬇️ Download File</button>
+    <input type="password" id="downloadFilePass" placeholder="🗝️ File password (if required)" style="display:none">
+    <p style="font-size:11px;color:rgba(255,107,107,0.6);margin-bottom:10px;text-align:center">
+      ⚠️ File deletes from cloud 5 seconds after last download
+    </p>
+    <button class="btn-success" onclick="downloadFile()">⬇️ Download Encrypted Package</button>
   </div>
 
 </div>
 
-<footer>© 2026 Zencrypt · Secure file transfer for everyone</footer>
+<!-- QR POPUP -->
+<div class="qr-popup-overlay" id="qrPopupOverlay" onclick="closeQRPopup(event)">
+  <div class="qr-popup">
+    <button class="qr-popup-close" onclick="closeQRPopupDirect()">✕</button>
+    <h3>📱 QR Code</h3>
+    <p>Receiver can scan or upload this image</p>
+    <div id="qrPopupCode"></div>
+    <div class="qr-popup-actions">
+      <button class="btn btn-primary" onclick="downloadQR()">⬇️ Save QR</button>
+      <button class="btn btn-secondary" onclick="shareQR()">📤 Share</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 Zencrypt · End-to-end encrypted file transfer</p>
+  <p style="margin-top:5px">Files are encrypted before upload. We never see your content.</p>
+</footer>
 
 <script>
-// ========== CONFIG ==========
-const API = 'https://zencrypt-iieg.onrender.com'; // পরে এটা update করব
+const API = 'https://zencrypt-iieg.onrender.com';
 
-// ========== TRANSLATIONS ==========
-const T = {
-  en: {
-    tokenTitle: "🔑 Your Secure Token",
-    generateBtn: "🎲 Generate",
-    copyTokenBtn: "📋 Copy",
-    qrTitle: "📱 QR Code (Receiver can scan this)",
-    uploadTitle: "📁 Upload File",
-    uploadSub: "Tap to select file • Max 5GB",
-    settingsTitle: "⚙️ Security Settings",
-    sendBtn: "🚀 Encrypt & Send",
-    receiveTitle: "🔍 Enter Token",
-    searchBtn: "🔍 Search",
-    scanBtn: "📷 Scan QR",
-    unlockTitle: "🔐 Unlock Token",
-    unlockBtn: "🔓 Unlock",
-    downloadBtn: "⬇️ Download File",
-  },
-  bn: {
-    tokenTitle: "🔑 আপনার সুরক্ষিত টোকেন",
-    generateBtn: "🎲 তৈরি করুন",
-    copyTokenBtn: "📋 কপি",
-    qrTitle: "📱 QR কোড (রিসিভার স্ক্যান করবে)",
-    uploadTitle: "📁 ফাইল আপলোড",
-    uploadSub: "ট্যাপ করুন • সর্বোচ্চ ৫ জিবি",
-    settingsTitle: "⚙️ নিরাপত্তা সেটিংস",
-    sendBtn: "🚀 এনক্রিপ্ট করে পাঠান",
-    receiveTitle: "🔍 টোকেন দিন",
-    searchBtn: "🔍 খুঁজুন",
-    scanBtn: "📷 QR স্ক্যান",
-    unlockTitle: "🔐 টোকেন আনলক",
-    unlockBtn: "🔓 আনলক",
-    downloadBtn: "⬇️ ডাউনলোড",
-  },
-  hi: {
-    tokenTitle: "🔑 आपका सुरक्षित टोकन",
-    generateBtn: "🎲 बनाएं",
-    copyTokenBtn: "📋 कॉपी",
-    qrTitle: "📱 QR कोड",
-    uploadTitle: "📁 फ़ाइल अपलोड",
-    uploadSub: "टैप करें • अधिकतम 5GB",
-    settingsTitle: "⚙️ सुरक्षा सेटिंग",
-    sendBtn: "🚀 एन्क्रिप्ट करके भेजें",
-    receiveTitle: "🔍 टोकन दर्ज करें",
-    searchBtn: "🔍 खोजें",
-    scanBtn: "📷 QR स्कैन",
-    unlockTitle: "🔐 टोकन अनलॉक",
-    unlockBtn: "🔓 अनलॉक",
-    downloadBtn: "⬇️ डाउनलोड",
-  }
-};
-
-let currentLang = 'en';
 let currentToken = '';
 let verifiedTokenData = null;
+let viewMode = 'unlimited';
+let dlMode = 'unlimited';
 
-// ========== LANGUAGE ==========
-function changeLang(lang) {
-  currentLang = T[lang] ? lang : 'en';
-  const t = T[currentLang];
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    if (t[key]) el.textContent = t[key];
-  });
-}
-
-window.onload = () => {
-  const bl = navigator.language.slice(0, 2);
-  const lang = T[bl] ? bl : 'en';
-  document.querySelector('.lang-selector').value = lang;
-  changeLang(lang);
-  generateToken();
-};
-
-// ========== TABS ==========
+// ===== TABS =====
 function showTab(tab) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -498,53 +621,102 @@ function showTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
 }
 
-// ========== TOKEN ==========
+// ===== LIMIT TOGGLE =====
+function setLimit(type, mode) {
+  if (type === 'view') {
+    viewMode = mode;
+    document.getElementById('viewUnlimitedBtn').classList.toggle('active', mode === 'unlimited');
+    document.getElementById('viewCustomBtn').classList.toggle('active', mode === 'custom');
+    document.getElementById('viewCustomInput').style.display = mode === 'custom' ? 'block' : 'none';
+  } else {
+    dlMode = mode;
+    document.getElementById('dlUnlimitedBtn').classList.toggle('active', mode === 'unlimited');
+    document.getElementById('dlCustomBtn').classList.toggle('active', mode === 'custom');
+    document.getElementById('dlCustomInput').style.display = mode === 'custom' ? 'block' : 'none';
+  }
+}
+
+// ===== TOKEN =====
 async function generateToken() {
   try {
     const res = await fetch(`${API}/api/generate-token`);
     const data = await res.json();
     currentToken = data.token;
-    document.getElementById('tokenDisplay').textContent = currentToken;
-    generateQR(currentToken);
-    document.getElementById('qrCard').style.display = 'block';
   } catch {
-    // Offline fallback
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-    let token = '';
-    for (let i = 0; i < 24; i++) {
-      if (i > 0 && i % 6 === 0) token += '-';
+    currentToken = generateLocalToken();
+  }
+  document.getElementById('tokenDisplay').textContent = currentToken;
+}
+
+function generateLocalToken() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%';
+  let token = '';
+  for (let i = 0; i < 4; i++) {
+    if (i > 0) token += '-';
+    for (let j = 0; j < 6; j++) {
       token += chars[Math.floor(Math.random() * chars.length)];
     }
-    currentToken = token;
-    document.getElementById('tokenDisplay').textContent = currentToken;
-    generateQR(currentToken);
-    document.getElementById('qrCard').style.display = 'block';
   }
+  return token;
 }
 
 function copyToken() {
+  if (!currentToken || currentToken === '-') return;
   navigator.clipboard.writeText(currentToken);
   alert('Token copied!');
 }
 
-function generateQR(text) {
-  const qrDiv = document.getElementById('qrcode');
+// ===== QR POPUP =====
+function openQRPopup() {
+  if (!currentToken || currentToken === '-') {
+    alert('Generate a token first!');
+    return;
+  }
+  const qrDiv = document.getElementById('qrPopupCode');
   qrDiv.innerHTML = '';
   new QRCode(qrDiv, {
-    text: text,
-    width: 180,
-    height: 180,
+    text: currentToken,
+    width: 220,
+    height: 220,
     colorDark: '#6c63ff',
-    colorLight: '#0a0a0f',
+    colorLight: '#13131a',
   });
+  document.getElementById('qrPopupOverlay').classList.add('open');
 }
 
-// ========== FILE SELECT ==========
+function closeQRPopup(e) {
+  if (e.target === document.getElementById('qrPopupOverlay')) {
+    document.getElementById('qrPopupOverlay').classList.remove('open');
+  }
+}
+
+function closeQRPopupDirect() {
+  document.getElementById('qrPopupOverlay').classList.remove('open');
+}
+
+function downloadQR() {
+  const canvas = document.querySelector('#qrPopupCode canvas');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.download = `zencrypt_qr_${currentToken.slice(0,6)}.png`;
+  a.href = canvas.toDataURL();
+  a.click();
+}
+
+function shareQR() {
+  if (navigator.share) {
+    navigator.share({ title: 'Zencrypt Token', text: `My Zencrypt token: ${currentToken}` });
+  } else {
+    navigator.clipboard.writeText(currentToken);
+    alert('Token copied to clipboard!');
+  }
+}
+
+// ===== FILE SELECT =====
 function onFileSelect(input) {
   if (!input.files.length) return;
   const file = input.files[0];
-  const max = 5 * 1024 * 1024 * 1024;
-  if (file.size > max) { alert('Max 5GB!'); return; }
+  if (file.size > 5 * 1024 * 1024 * 1024) { alert('Max 5GB!'); return; }
   const info = document.getElementById('fileInfo');
   info.style.display = 'block';
   info.textContent = `📄 ${file.name} (${formatSize(file.size)})`;
@@ -557,65 +729,98 @@ function formatSize(b) {
   return (b/1073741824).toFixed(1) + ' GB';
 }
 
-// ========== SEND FILE ==========
+// ===== SEND =====
 async function sendFile() {
   const file = document.getElementById('fileInput').files[0];
   const tokenPass = document.getElementById('tokenPass').value;
   const filePass = document.getElementById('filePass').value;
-  const expireTime = document.getElementById('expireTime').value;
+  const hours = parseInt(document.getElementById('expireHours').value) || 0;
+  const minutes = parseInt(document.getElementById('expireMinutes').value) || 0;
 
-  if (!currentToken) { showAlert('sendError', 'Generate a token first!'); return; }
+  if (!currentToken || currentToken === '-') { showAlert('sendError', 'Generate a token first!'); return; }
   if (!file) { showAlert('sendError', 'Select a file first!'); return; }
-  if (!tokenPass) { showAlert('sendError', 'Set a token password!'); return; }
+  if (!tokenPass) { showAlert('sendError', 'Token password is required!'); return; }
+
+  let expireSeconds = (hours * 3600) + (minutes * 60);
+  if (expireSeconds <= 0 || expireSeconds > 86400) expireSeconds = 86400;
+
+  const viewLimit = viewMode === 'unlimited' ? 'unlimited' : (parseInt(document.getElementById('viewCustomInput').value) || 1);
+  const downloadLimit = dlMode === 'unlimited' ? 'unlimited' : (parseInt(document.getElementById('dlCustomInput').value) || 1);
 
   const formData = new FormData();
   formData.append('file', file);
   formData.append('token', currentToken);
   formData.append('tokenPassword', tokenPass);
   formData.append('filePassword', filePass);
-  formData.append('expireSeconds', expireTime);
+  formData.append('expireSeconds', expireSeconds);
+  formData.append('viewLimit', viewLimit);
+  formData.append('downloadLimit', downloadLimit);
 
   document.getElementById('sendBtn').disabled = true;
   document.getElementById('uploadProgress').style.display = 'block';
 
-  try {
-    const xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        const pct = Math.round((e.loaded / e.total) * 100);
-        document.getElementById('uploadBar').style.width = pct + '%';
-        document.getElementById('uploadLabel').textContent = `Uploading... ${pct}%`;
-      }
-    };
+  const xhr = new XMLHttpRequest();
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable) {
+      const pct = Math.round((e.loaded / e.total) * 100);
+      document.getElementById('uploadBar').style.width = pct + '%';
+      document.getElementById('uploadLabel').textContent = `Encrypting & uploading... ${pct}%`;
+    }
+  };
 
-    xhr.onload = () => {
-      document.getElementById('uploadProgress').style.display = 'none';
-      document.getElementById('sendBtn').disabled = false;
+  xhr.onload = () => {
+    document.getElementById('uploadProgress').style.display = 'none';
+    document.getElementById('sendBtn').disabled = false;
+    try {
       const res = JSON.parse(xhr.responseText);
       if (res.success) {
-        showAlert('sendSuccess', '✅ File uploaded! Share the token with receiver.');
+        showAlert('sendSuccess', '✅ Package encrypted & uploaded! Share the token.');
       } else {
         showAlert('sendError', res.error || 'Upload failed!');
       }
-    };
+    } catch {
+      showAlert('sendError', 'Server error!');
+    }
+  };
 
-    xhr.onerror = () => {
-      document.getElementById('uploadProgress').style.display = 'none';
-      document.getElementById('sendBtn').disabled = false;
-      showAlert('sendError', 'Connection error!');
-    };
-
-    xhr.open('POST', `${API}/api/upload`);
-    xhr.send(formData);
-
-  } catch (err) {
-    showAlert('sendError', 'Error: ' + err.message);
+  xhr.onerror = () => {
+    document.getElementById('uploadProgress').style.display = 'none';
     document.getElementById('sendBtn').disabled = false;
-  }
+    showAlert('sendError', 'Connection error!');
+  };
+
+  xhr.open('POST', `${API}/api/upload`);
+  xhr.send(formData);
 }
 
-// ========== RECEIVE ==========
-async function searchToken() {
+// ===== QR IMAGE SCAN =====
+function readQRImage(input) {
+  if (!input.files.length) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code) {
+        document.getElementById('tokenInput').value = code.data;
+        showAlert('receiveSuccess', '✅ QR scanned! Click Search.');
+      } else {
+        showAlert('receiveError', 'Could not read QR. Try a clearer image.');
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+// ===== RECEIVE =====
+function searchToken() {
   const token = document.getElementById('tokenInput').value.trim();
   if (!token) { showAlert('receiveError', 'Enter a token!'); return; }
   currentToken = token;
@@ -633,9 +838,7 @@ async function unlockToken() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: currentToken, tokenPassword: tokenPass })
     });
-
     const data = await res.json();
-
     if (data.success) {
       verifiedTokenData = data;
       hideAlert('receiveError');
@@ -649,12 +852,15 @@ async function unlockToken() {
 }
 
 function showFileReady(data) {
-  const box = document.getElementById('fileReady');
-  box.style.display = 'block';
-  document.getElementById('readyFileName').textContent = data.fileName;
+  document.getElementById('fileReady').style.display = 'block';
   document.getElementById('readyFileSize').textContent = formatSize(data.fileSize);
-  const exp = new Date(data.expireAt);
-  document.getElementById('readyExpire').textContent = exp.toLocaleString();
+  document.getElementById('readyExpire').textContent = new Date(data.expireAt).toLocaleString();
+  document.getElementById('readyViews').textContent = data.viewLimit === 'unlimited'
+    ? '∞ Unlimited'
+    : `${data.viewCount} / ${data.viewLimit}`;
+  document.getElementById('readyDownloads').textContent = data.downloadLimit === 'unlimited'
+    ? '∞ Unlimited'
+    : `${data.downloadCount} / ${data.downloadLimit}`;
   if (data.hasFilePassword) {
     document.getElementById('downloadFilePass').style.display = 'block';
   }
@@ -668,11 +874,7 @@ async function downloadFile() {
     const res = await fetch(`${API}/api/download`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token: currentToken,
-        tokenPassword: tokenPass,
-        filePassword: filePass
-      })
+      body: JSON.stringify({ token: currentToken, tokenPassword: tokenPass, filePassword: filePass })
     });
 
     if (!res.ok) {
@@ -685,30 +887,31 @@ async function downloadFile() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = verifiedTokenData.fileName;
+    a.download = `zencrypt_pkg_${Date.now()}.bin`;
     a.click();
     URL.revokeObjectURL(url);
+
+    showAlert('receiveSuccess', '✅ Downloaded! File will be deleted from cloud in 5 seconds.');
+    document.getElementById('fileReady').style.display = 'none';
 
   } catch {
     showAlert('receiveError', 'Connection error!');
   }
 }
 
-function scanQR() {
-  alert('QR scan feature coming soon! Use a QR scanner app and paste the token.');
-}
-
-// ========== HELPERS ==========
+// ===== HELPERS =====
 function showAlert(id, msg) {
   const el = document.getElementById(id);
   el.textContent = msg;
   el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 5000);
+  setTimeout(() => el.style.display = 'none', 6000);
 }
 
 function hideAlert(id) {
   document.getElementById(id).style.display = 'none';
 }
+
+window.onload = () => generateToken();
 </script>
 </body>
 </html>
