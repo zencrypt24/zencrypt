@@ -3,7 +3,11 @@ const multer = require('multer');
 const crypto = require('crypto');
 const axios = require('axios');
 const cors = require('cors');
-const AdmZip = require('adm-zip');
+const Seven = require('node-7z');
+const sevenBin = require('7zip-bin');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 const app = express();
 app.use(cors());
@@ -33,10 +37,43 @@ function generateToken() {
   return token;
 }
 
-function createPasswordZip(fileBuffer, fileName, password) {
-  const zip = new AdmZip();
-  zip.addFile(fileName, fileBuffer, '', password);
-  return zip.toBuffer();
+// ===== CREATE PASSWORD PROTECTED 7Z =====
+function createPassword7z(fileBuffer, fileName, password) {
+  return new Promise((resolve, reject) => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'zencrypt-'));
+    const inputFile = path.join(tmpDir, fileName);
+    const outputFile = path.join(tmpDir, 'output.7z');
+
+    try {
+      fs.writeFileSync(inputFile, fileBuffer);
+
+      const stream = Seven.add(outputFile, inputFile, {
+        $bin: sevenBin.path7za,
+        password: password,
+        mhe: true, // encrypt file headers too
+        mx: 5
+      });
+
+      stream.on('end', () => {
+        try {
+          const result = fs.readFileSync(outputFile);
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+          resolve(result);
+        } catch (e) {
+          reject(e);
+        }
+      });
+
+      stream.on('error', (err) => {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+        reject(err);
+      });
+
+    } catch (e) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      reject(e);
+    }
+  });
 }
 
 async function getB2Auth() {
@@ -91,8 +128,8 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     let uploadFileName;
 
     if (isMystery && filePassword) {
-      uploadBuffer = createPasswordZip(file.buffer, file.originalname, filePassword);
-      uploadFileName = `${token}/zencrypt_pkg_${Date.now()}.zip`;
+      uploadBuffer = await createPassword7z(file.buffer, file.originalname, filePassword);
+      uploadFileName = `${token}/zencrypt_pkg_${Date.now()}.7z`;
     } else {
       uploadBuffer = file.buffer;
       uploadFileName = `${token}/${Date.now()}_${file.originalname}`;
@@ -209,7 +246,7 @@ app.post('/api/download', async (req, res) => {
     });
 
     const downloadName = data.isMystery
-      ? `zencrypt_${crypto.randomBytes(4).toString('hex')}.zip`
+      ? `zencrypt_${crypto.randomBytes(4).toString('hex')}.7z`
       : data.originalName;
 
     res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
