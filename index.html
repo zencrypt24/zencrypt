@@ -4,480 +4,93 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Zencrypt - Secure File Transfer</title>
-<meta name="description" content="Send files securely with end-to-end encryption. No account needed. Files auto-delete after set time.">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: 'Segoe UI', sans-serif;
-  background: #0a0a0f;
-  color: #fff;
-  min-height: 100vh;
-}
-
-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 24px;
-  background: rgba(255,255,255,0.03);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  backdrop-filter: blur(10px);
-}
-
-.logo {
-  font-size: 22px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #6c63ff, #00d4ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.tabs {
-  display: flex;
-  max-width: 500px;
-  margin: 30px auto 0;
-  padding: 0 20px;
-  gap: 10px;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.5);
-}
-
-.tab-btn.active {
-  background: linear-gradient(135deg, #6c63ff, #00d4ff);
-  color: #fff;
-}
-
-.section {
-  display: none;
-  max-width: 500px;
-  margin: 24px auto;
-  padding: 0 20px 40px;
-}
-
+body { font-family: 'Segoe UI', sans-serif; background: #0a0a0f; color: #fff; min-height: 100vh; }
+nav { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.08); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+.logo { font-size: 22px; font-weight: 800; background: linear-gradient(135deg, #6c63ff, #00d4ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.tabs { display: flex; max-width: 500px; margin: 30px auto 0; padding: 0 20px; gap: 10px; }
+.tab-btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
+.tab-btn.active { background: linear-gradient(135deg, #6c63ff, #00d4ff); color: #fff; }
+.section { display: none; max-width: 500px; margin: 24px auto; padding: 0 20px 40px; }
 .section.active { display: block; }
-
-.card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 16px;
-}
-
-.card h3 {
-  font-size: 15px;
-  color: rgba(255,255,255,0.7);
-  margin-bottom: 14px;
-}
-
-.token-display {
-  background: rgba(108,99,255,0.1);
-  border: 1px solid rgba(108,99,255,0.3);
-  border-radius: 10px;
-  padding: 14px 16px;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: #a29bff;
-  text-align: center;
-  word-break: break-all;
-  margin-bottom: 12px;
-  user-select: none;
-}
-
-.btn-row {
-  display: flex;
-  gap: 10px;
-}
-
-.btn {
-  flex: 1;
-  padding: 11px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: opacity 0.2s;
-}
-
+.card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+.card h3 { font-size: 15px; color: rgba(255,255,255,0.7); margin-bottom: 14px; }
+.token-display { background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.3); border-radius: 10px; padding: 14px 16px; font-size: 15px; font-weight: 700; letter-spacing: 1px; color: #a29bff; text-align: center; word-break: break-all; margin-bottom: 12px; user-select: none; }
+.btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.btn { flex: 1; padding: 11px; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; transition: opacity 0.2s; }
 .btn:hover { opacity: 0.85; }
-
-.btn-primary {
-  background: linear-gradient(135deg, #6c63ff, #00d4ff);
-  color: #fff;
-}
-
-.btn-secondary {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.12);
-}
-
-.btn-success {
-  background: linear-gradient(135deg, #00b894, #00d4ff);
-  color: #fff;
-  width: 100%;
-  padding: 14px;
-  font-size: 15px;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 700;
-  margin-top: 4px;
-}
-
-.btn-success:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.qr-icon-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.qr-icon-btn {
-  width: 48px;
-  height: 48px;
-  background: rgba(108,99,255,0.15);
-  border: 1px solid rgba(108,99,255,0.3);
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  transition: all 0.2s;
-}
-
+.btn-primary { background: linear-gradient(135deg, #6c63ff, #00d4ff); color: #fff; }
+.btn-secondary { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.12); }
+.btn-success { background: linear-gradient(135deg, #00b894, #00d4ff); color: #fff; width: 100%; padding: 14px; font-size: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; margin-top: 4px; }
+.btn-success:disabled { opacity: 0.5; cursor: not-allowed; }
+.copy-combo-btn { width: 100%; padding: 10px 14px; background: rgba(108,99,255,0.12); border: 1px solid rgba(108,99,255,0.3); border-radius: 10px; color: #a29bff; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; transition: all 0.2s; }
+.copy-combo-btn:hover { background: rgba(108,99,255,0.22); }
+.qr-icon-wrap { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.qr-icon-btn { width: 48px; height: 48px; background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.3); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 22px; transition: all 0.2s; }
 .qr-icon-btn:hover { background: rgba(108,99,255,0.3); }
-
-.qr-icon-label {
-  font-size: 12px;
-  color: rgba(255,255,255,0.4);
-  line-height: 1.5;
-}
-
-.qr-popup-overlay {
-  display: none;
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.85);
-  z-index: 999;
-  justify-content: center;
-  align-items: center;
-}
-
+.qr-icon-label { font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+.qr-popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; }
 .qr-popup-overlay.open { display: flex; }
-
-.qr-popup {
-  background: #13131a;
-  border: 1px solid rgba(108,99,255,0.3);
-  border-radius: 20px;
-  padding: 28px 24px;
-  text-align: center;
-  max-width: 320px;
-  width: 90%;
-  position: relative;
-}
-
-.qr-popup h3 {
-  font-size: 16px;
-  margin-bottom: 6px;
-  color: #a29bff;
-}
-
-.qr-popup p {
-  font-size: 12px;
-  color: rgba(255,255,255,0.4);
-  margin-bottom: 16px;
-}
-
-.qr-popup-close {
-  position: absolute;
-  top: 14px; right: 16px;
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.4);
-  font-size: 20px;
-  cursor: pointer;
-}
-
-#qrPopupCode {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
+.qr-popup { background: #13131a; border: 1px solid rgba(108,99,255,0.3); border-radius: 20px; padding: 28px 24px; text-align: center; max-width: 320px; width: 90%; position: relative; }
+.qr-popup h3 { font-size: 16px; margin-bottom: 6px; color: #a29bff; }
+.qr-popup p { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 16px; }
+.qr-popup-close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: rgba(255,255,255,0.4); font-size: 20px; cursor: pointer; }
+#qrPopupCode { display: flex; justify-content: center; margin-bottom: 16px; }
 .qr-popup-actions { display: flex; gap: 10px; }
-
-input, select {
-  width: 100%;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #fff;
-  padding: 11px 14px;
-  border-radius: 10px;
-  font-size: 14px;
-  margin-bottom: 10px;
-  outline: none;
-}
-
+.input-with-copy { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.input-with-copy input { margin-bottom: 0; flex: 1; }
+.inline-copy-btn { background: rgba(108,99,255,0.2); border: 1px solid rgba(108,99,255,0.4); color: #a29bff; padding: 11px 14px; border-radius: 10px; cursor: pointer; font-size: 12px; white-space: nowrap; flex-shrink: 0; transition: all 0.2s; }
+.inline-copy-btn:hover { background: rgba(108,99,255,0.35); }
+input, select { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 11px 14px; border-radius: 10px; font-size: 14px; margin-bottom: 10px; outline: none; }
 input::placeholder { color: rgba(255,255,255,0.3); }
 select option { background: #13131a; }
-
-.upload-box {
-  border: 2px dashed rgba(108,99,255,0.4);
-  border-radius: 14px;
-  padding: 28px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  margin-bottom: 10px;
-}
-
-.upload-box:hover {
-  border-color: #6c63ff;
-  background: rgba(108,99,255,0.06);
-}
-
+.upload-box { border: 2px dashed rgba(108,99,255,0.4); border-radius: 14px; padding: 28px; text-align: center; cursor: pointer; transition: all 0.3s; margin-bottom: 10px; }
+.upload-box:hover { border-color: #6c63ff; background: rgba(108,99,255,0.06); }
 .upload-box .icon { font-size: 36px; margin-bottom: 8px; }
 .upload-box p { color: rgba(255,255,255,0.5); font-size: 13px; }
-
 #fileInput, #qrImageInput { display: none; }
-
-.file-info {
-  display: none;
-  background: rgba(108,99,255,0.08);
-  border: 1px solid rgba(108,99,255,0.2);
-  border-radius: 10px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
-  font-size: 13px;
-  color: rgba(255,255,255,0.8);
-}
-
+.file-list { margin-bottom: 10px; }
+.file-item { display: flex; justify-content: space-between; align-items: center; background: rgba(108,99,255,0.08); border: 1px solid rgba(108,99,255,0.2); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; font-size: 13px; }
+.file-item .remove-btn { background: none; border: none; color: rgba(255,107,107,0.8); cursor: pointer; font-size: 16px; padding: 0 4px; }
+.storage-bar-wrap { margin-bottom: 12px; }
+.storage-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+.storage-bar-bg { background: rgba(255,255,255,0.08); border-radius: 10px; height: 6px; overflow: hidden; }
+.storage-bar-fill { height: 100%; background: linear-gradient(135deg, #6c63ff, #00d4ff); border-radius: 10px; width: 0%; transition: width 0.3s; }
 .limit-row { margin-bottom: 12px; }
-
-.limit-row label {
-  font-size: 13px;
-  color: rgba(255,255,255,0.5);
-  display: block;
-  margin-bottom: 6px;
-}
-
-.limit-toggle {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.toggle-btn {
-  flex: 1;
-  padding: 9px;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.5);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.toggle-btn.active {
-  background: rgba(108,99,255,0.2);
-  border-color: rgba(108,99,255,0.5);
-  color: #a29bff;
-}
-
+.limit-row label { font-size: 13px; color: rgba(255,255,255,0.5); display: block; margin-bottom: 6px; }
+.limit-toggle { display: flex; gap: 8px; margin-bottom: 8px; }
+.toggle-btn { flex: 1; padding: 9px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+.toggle-btn.active { background: rgba(108,99,255,0.2); border-color: rgba(108,99,255,0.5); color: #a29bff; }
 .custom-input { display: none; }
-
-.time-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
+.time-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
 .time-row input { margin-bottom: 0; flex: 1; }
-
-.time-row span {
-  color: rgba(255,255,255,0.4);
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-/* MYSTERY TOGGLE */
-.mystery-wrap {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(108,99,255,0.08);
-  border: 1px solid rgba(108,99,255,0.2);
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 12px;
-}
-
-.mystery-wrap .mystery-info h4 {
-  font-size: 14px;
-  color: #a29bff;
-  margin-bottom: 3px;
-}
-
-.mystery-wrap .mystery-info p {
-  font-size: 11px;
-  color: rgba(255,255,255,0.4);
-}
-
-.switch {
-  position: relative;
-  width: 46px;
-  height: 26px;
-  flex-shrink: 0;
-}
-
+.time-row span { color: rgba(255,255,255,0.4); font-size: 13px; white-space: nowrap; }
+.mystery-wrap { display: flex; justify-content: space-between; align-items: center; background: rgba(108,99,255,0.08); border: 1px solid rgba(108,99,255,0.2); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+.mystery-wrap .mystery-info h4 { font-size: 14px; color: #a29bff; margin-bottom: 3px; }
+.mystery-wrap .mystery-info p { font-size: 11px; color: rgba(255,255,255,0.4); }
+.switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
 .switch input { opacity: 0; width: 0; height: 0; }
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(255,255,255,0.1);
-  border-radius: 26px;
-  transition: 0.3s;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 3px;
-  bottom: 3px;
-  background: white;
-  border-radius: 50%;
-  transition: 0.3s;
-}
-
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.1); border-radius: 26px; transition: 0.3s; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
 input:checked + .slider { background: #6c63ff; }
 input:checked + .slider:before { transform: translateX(20px); }
-
 .progress-wrap { display: none; margin-bottom: 12px; }
-
-.progress-bg {
-  background: rgba(255,255,255,0.08);
-  border-radius: 10px;
-  height: 8px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(135deg, #6c63ff, #00d4ff);
-  border-radius: 10px;
-  width: 0%;
-  transition: width 0.3s;
-}
-
-.progress-label {
-  text-align: center;
-  font-size: 13px;
-  color: rgba(255,255,255,0.5);
-}
-
-.alert {
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 13px;
-  margin-bottom: 12px;
-  display: none;
-}
-
-.alert-error {
-  background: rgba(255,107,107,0.1);
-  border: 1px solid rgba(255,107,107,0.3);
-  color: #ff6b6b;
-}
-
-.alert-success {
-  background: rgba(0,184,148,0.1);
-  border: 1px solid rgba(0,184,148,0.3);
-  color: #00b894;
-}
-
-.file-ready {
-  display: none;
-  background: rgba(108,99,255,0.08);
-  border: 1px solid rgba(108,99,255,0.2);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-}
-
-.file-ready h4 {
-  margin-bottom: 10px;
-  font-size: 15px;
-  color: #a29bff;
-}
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: rgba(255,255,255,0.5);
-  margin-bottom: 6px;
-}
-
+.progress-bg { background: rgba(255,255,255,0.08); border-radius: 10px; height: 8px; overflow: hidden; margin-bottom: 8px; }
+.progress-fill { height: 100%; background: linear-gradient(135deg, #6c63ff, #00d4ff); border-radius: 10px; width: 0%; transition: width 0.3s; }
+.progress-label { text-align: center; font-size: 13px; color: rgba(255,255,255,0.5); }
+.alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 12px; display: none; }
+.alert-error { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3); color: #ff6b6b; }
+.alert-success { background: rgba(0,184,148,0.1); border: 1px solid rgba(0,184,148,0.3); color: #00b894; }
+.file-ready { display: none; background: rgba(108,99,255,0.08); border: 1px solid rgba(108,99,255,0.2); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.file-ready h4 { margin-bottom: 10px; font-size: 15px; color: #a29bff; }
+.info-row { display: flex; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
 .info-row span:last-child { color: rgba(255,255,255,0.8); }
-
-.security-badge {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 16px;
-  justify-content: center;
-}
-
-.badge {
-  background: rgba(108,99,255,0.12);
-  border: 1px solid rgba(108,99,255,0.25);
-  border-radius: 20px;
-  padding: 5px 12px;
-  font-size: 11px;
-  color: #a29bff;
-}
-
-footer {
-  text-align: center;
-  padding: 30px;
-  color: rgba(255,255,255,0.2);
-  font-size: 12px;
-  border-top: 1px solid rgba(255,255,255,0.05);
-}
+.security-badge { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; justify-content: center; }
+.badge { background: rgba(108,99,255,0.12); border: 1px solid rgba(108,99,255,0.25); border-radius: 20px; padding: 5px 12px; font-size: 11px; color: #a29bff; }
+footer { text-align: center; padding: 30px; color: rgba(255,255,255,0.2); font-size: 12px; border-top: 1px solid rgba(255,255,255,0.05); }
 </style>
 </head>
 <body>
@@ -492,7 +105,7 @@ footer {
   <button class="tab-btn" onclick="showTab('receive')" id="tab-receive">📥 Receive</button>
 </div>
 
-<!-- ========== SEND ========== -->
+<!-- SEND -->
 <div class="section active" id="send-section">
 
   <div class="card">
@@ -502,6 +115,9 @@ footer {
       <button class="btn btn-primary" onclick="generateToken()">🎲 New Token</button>
       <button class="btn btn-secondary" onclick="copyToken()">📋 Copy</button>
     </div>
+    <button class="copy-combo-btn" onclick="copyTokenWithPass()">
+      📋 Copy Token + Password for Receiver
+    </button>
     <div class="qr-icon-wrap">
       <div class="qr-icon-btn" onclick="openQRPopup()">▦</div>
       <div class="qr-icon-label">Tap to view QR Code<br><span style="color:rgba(255,255,255,0.25)">Receiver can scan or upload</span></div>
@@ -509,33 +125,47 @@ footer {
   </div>
 
   <div class="card">
-    <h3>📁 Select File</h3>
+    <h3>📁 Select Files</h3>
     <div class="upload-box" onclick="document.getElementById('fileInput').click()">
       <div class="icon">🔒</div>
-      <p>Tap to select file</p>
-      <p style="margin-top:5px;font-size:11px;color:rgba(255,255,255,0.25)">Max 5GB</p>
+      <p>Tap to select files</p>
+      <p style="margin-top:5px;font-size:11px;color:rgba(255,255,255,0.25)">Max 5GB total • Multiple files allowed</p>
     </div>
-    <input type="file" id="fileInput" onchange="onFileSelect(this)">
-    <div class="file-info" id="fileInfo"></div>
+    <input type="file" id="fileInput" multiple onchange="onFileSelect(this)">
+    <div class="file-list" id="fileList"></div>
+    <div class="storage-bar-wrap" id="storageBarWrap" style="display:none">
+      <div class="storage-bar-label">
+        <span>Storage used</span>
+        <span id="storageLabel">0 MB / 5 GB</span>
+      </div>
+      <div class="storage-bar-bg">
+        <div class="storage-bar-fill" id="storageBarFill"></div>
+      </div>
+    </div>
   </div>
 
   <div class="card">
     <h3>⚙️ Security Settings</h3>
 
-    <!-- Mystery Mode Toggle -->
     <div class="mystery-wrap">
       <div class="mystery-info">
         <h4>🕵️ Mystery Mode</h4>
-        <p>File becomes password-protected ZIP<br>Contents hidden until unlocked</p>
+        <p>File → Password-protected ZIP<br>Contents hidden until unlocked</p>
       </div>
       <label class="switch">
-        <input type="checkbox" id="mysteryToggle" checked>
+        <input type="checkbox" id="mysteryToggle" onchange="onMysteryToggle()">
         <span class="slider"></span>
       </label>
     </div>
 
     <input type="password" id="tokenPass" placeholder="🔐 Token Password (required)">
-    <input type="password" id="filePass" placeholder="🗝️ File Password (for Mystery Mode)">
+
+    <div id="filePassWrap" style="display:none">
+      <div class="input-with-copy">
+        <input type="password" id="filePass" placeholder="🗝️ ZIP File Password">
+        <button class="inline-copy-btn" onclick="copyFilePass()">📋 Copy</button>
+      </div>
+    </div>
 
     <div class="limit-row">
       <label>⏳ Auto-delete after (max 24h)</label>
@@ -564,7 +194,6 @@ footer {
       </div>
       <input type="number" id="dlCustomInput" class="custom-input" placeholder="Enter max downloads..." min="1">
     </div>
-
   </div>
 
   <div class="progress-wrap" id="uploadProgress">
@@ -584,12 +213,10 @@ footer {
     <span class="badge">🕵️ Mystery Mode</span>
     <span class="badge">🚫 No Logs</span>
   </div>
-
 </div>
 
-<!-- ========== RECEIVE ========== -->
+<!-- RECEIVE -->
 <div class="section" id="receive-section">
-
   <div class="card">
     <h3>🔍 Find Package</h3>
     <input type="text" id="tokenInput" placeholder="Paste token here...">
@@ -617,13 +244,12 @@ footer {
     <div class="info-row"><span>⬇️ Downloads</span><span id="readyDownloads">-</span></div>
     <div class="info-row"><span>🕵️ Mode</span><span id="readyMode">-</span></div>
     <br>
-    <input type="password" id="downloadFilePass" placeholder="🗝️ File password (if required)" style="display:none">
-    <p style="font-size:11px;color:rgba(255,107,107,0.6);margin-bottom:10px;text-align:center">
-      ⚠️ File deletes from cloud 5s after last download
-    </p>
+    <div id="downloadFilePassWrap" style="display:none">
+      <input type="password" id="downloadFilePass" placeholder="🗝️ Enter ZIP password...">
+    </div>
+    <p style="font-size:11px;color:rgba(255,107,107,0.6);margin-bottom:10px;text-align:center">⚠️ File deletes from cloud 5s after last download</p>
     <button class="btn-success" onclick="downloadFile()">⬇️ Download Package</button>
   </div>
-
 </div>
 
 <!-- QR POPUP -->
@@ -647,11 +273,14 @@ footer {
 
 <script>
 const API = 'https://zencrypt-j1ce.onrender.com';
+const MAX_SIZE = 5 * 1024 * 1024 * 1024;
 
 let currentToken = '';
 let verifiedTokenData = null;
 let viewMode = 'unlimited';
 let dlMode = 'unlimited';
+let selectedFiles = [];
+let totalSize = 0;
 
 function showTab(tab) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -672,6 +301,11 @@ function setLimit(type, mode) {
     document.getElementById('dlCustomBtn').classList.toggle('active', mode === 'custom');
     document.getElementById('dlCustomInput').style.display = mode === 'custom' ? 'block' : 'none';
   }
+}
+
+function onMysteryToggle() {
+  const isMystery = document.getElementById('mysteryToggle').checked;
+  document.getElementById('filePassWrap').style.display = isMystery ? 'block' : 'none';
 }
 
 async function generateToken() {
@@ -697,29 +331,35 @@ function copyToken() {
   alert('Token copied!');
 }
 
+function copyTokenWithPass() {
+  const tokenPass = document.getElementById('tokenPass').value;
+  if (!currentToken || currentToken === '-') { alert('Generate a token first!'); return; }
+  if (!tokenPass) { alert('Set a token password first!'); return; }
+  const text = `🔑 Token :\n${currentToken}\n\n🔐 Password :\n${tokenPass}`;
+  navigator.clipboard.writeText(text);
+  alert('Copied! Share this with your receiver.');
+}
+
+function copyFilePass() {
+  const filePass = document.getElementById('filePass').value;
+  if (!filePass) { alert('Set a file password first!'); return; }
+  navigator.clipboard.writeText(filePass);
+  alert('File password copied!');
+}
+
 function openQRPopup() {
   if (!currentToken || currentToken === '-') { alert('Generate a token first!'); return; }
   const qrDiv = document.getElementById('qrPopupCode');
   qrDiv.innerHTML = '';
-  new QRCode(qrDiv, {
-    text: currentToken,
-    width: 220,
-    height: 220,
-    colorDark: '#6c63ff',
-    colorLight: '#13131a',
-  });
+  new QRCode(qrDiv, { text: currentToken, width: 220, height: 220, colorDark: '#6c63ff', colorLight: '#13131a' });
   document.getElementById('qrPopupOverlay').classList.add('open');
 }
 
 function closeQRPopup(e) {
-  if (e.target === document.getElementById('qrPopupOverlay')) {
-    document.getElementById('qrPopupOverlay').classList.remove('open');
-  }
+  if (e.target === document.getElementById('qrPopupOverlay')) document.getElementById('qrPopupOverlay').classList.remove('open');
 }
 
-function closeQRPopupDirect() {
-  document.getElementById('qrPopupOverlay').classList.remove('open');
-}
+function closeQRPopupDirect() { document.getElementById('qrPopupOverlay').classList.remove('open'); }
 
 function downloadQR() {
   const canvas = document.querySelector('#qrPopupCode canvas');
@@ -740,12 +380,40 @@ function shareQR() {
 }
 
 function onFileSelect(input) {
-  if (!input.files.length) return;
-  const file = input.files[0];
-  if (file.size > 5 * 1024 * 1024 * 1024) { alert('Max 5GB!'); return; }
-  const info = document.getElementById('fileInfo');
-  info.style.display = 'block';
-  info.textContent = `📄 ${file.name} (${formatSize(file.size)})`;
+  const newFiles = Array.from(input.files);
+  for (const file of newFiles) {
+    if (totalSize + file.size > MAX_SIZE) {
+      alert(`Cannot add "${file.name}" — 5GB limit reached!`);
+      continue;
+    }
+    selectedFiles.push(file);
+    totalSize += file.size;
+  }
+  input.value = '';
+  renderFileList();
+}
+
+function removeFile(index) {
+  totalSize -= selectedFiles[index].size;
+  selectedFiles.splice(index, 1);
+  renderFileList();
+}
+
+function renderFileList() {
+  const list = document.getElementById('fileList');
+  const barWrap = document.getElementById('storageBarWrap');
+  list.innerHTML = '';
+  if (selectedFiles.length === 0) { barWrap.style.display = 'none'; return; }
+  barWrap.style.display = 'block';
+  selectedFiles.forEach((file, i) => {
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    item.innerHTML = `<span>📄 ${file.name} (${formatSize(file.size)})</span><button class="remove-btn" onclick="removeFile(${i})">✕</button>`;
+    list.appendChild(item);
+  });
+  const pct = (totalSize / MAX_SIZE) * 100;
+  document.getElementById('storageBarFill').style.width = pct + '%';
+  document.getElementById('storageLabel').textContent = `${formatSize(totalSize)} / 5 GB`;
 }
 
 function formatSize(b) {
@@ -756,69 +424,59 @@ function formatSize(b) {
 }
 
 async function sendFile() {
-  const file = document.getElementById('fileInput').files[0];
-  const tokenPass = document.getElementById('tokenPass').value;
-  const filePass = document.getElementById('filePass').value;
-  const hours = parseInt(document.getElementById('expireHours').value) || 0;
-  const minutes = parseInt(document.getElementById('expireMinutes').value) || 0;
-  const mysteryMode = document.getElementById('mysteryToggle').checked;
-
   if (!currentToken || currentToken === '-') { showAlert('sendError', 'Generate a token first!'); return; }
-  if (!file) { showAlert('sendError', 'Select a file first!'); return; }
+  if (selectedFiles.length === 0) { showAlert('sendError', 'Select at least one file!'); return; }
+  const tokenPass = document.getElementById('tokenPass').value;
   if (!tokenPass) { showAlert('sendError', 'Token password is required!'); return; }
+  const mysteryMode = document.getElementById('mysteryToggle').checked;
+  const filePass = document.getElementById('filePass').value;
   if (mysteryMode && !filePass) { showAlert('sendError', 'File password required for Mystery Mode!'); return; }
 
+  const hours = parseInt(document.getElementById('expireHours').value) || 0;
+  const minutes = parseInt(document.getElementById('expireMinutes').value) || 0;
   let expireSeconds = (hours * 3600) + (minutes * 60);
   if (expireSeconds <= 0 || expireSeconds > 86400) expireSeconds = 86400;
 
   const viewLimit = viewMode === 'unlimited' ? 'unlimited' : (parseInt(document.getElementById('viewCustomInput').value) || 1);
   const downloadLimit = dlMode === 'unlimited' ? 'unlimited' : (parseInt(document.getElementById('dlCustomInput').value) || 1);
 
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('token', currentToken);
-  formData.append('tokenPassword', tokenPass);
-  formData.append('filePassword', filePass);
-  formData.append('expireSeconds', expireSeconds);
-  formData.append('viewLimit', viewLimit);
-  formData.append('downloadLimit', downloadLimit);
-  formData.append('mysteryMode', mysteryMode.toString());
-
   document.getElementById('sendBtn').disabled = true;
   document.getElementById('uploadProgress').style.display = 'block';
 
-  const xhr = new XMLHttpRequest();
-  xhr.upload.onprogress = (e) => {
-    if (e.lengthComputable) {
-      const pct = Math.round((e.loaded / e.total) * 100);
-      document.getElementById('uploadBar').style.width = pct + '%';
-      document.getElementById('uploadLabel').textContent = `Uploading... ${pct}%`;
-    }
-  };
+  let uploadedCount = 0;
+  for (const file of selectedFiles) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('token', currentToken);
+    formData.append('tokenPassword', tokenPass);
+    formData.append('filePassword', mysteryMode ? filePass : '');
+    formData.append('expireSeconds', expireSeconds);
+    formData.append('viewLimit', viewLimit);
+    formData.append('downloadLimit', downloadLimit);
+    formData.append('mysteryMode', mysteryMode.toString());
 
-  xhr.onload = () => {
-    document.getElementById('uploadProgress').style.display = 'none';
-    document.getElementById('sendBtn').disabled = false;
-    try {
-      const res = JSON.parse(xhr.responseText);
-      if (res.success) {
-        showAlert('sendSuccess', '✅ Package uploaded! Share the token with receiver.');
-      } else {
-        showAlert('sendError', res.error || 'Upload failed!');
-      }
-    } catch {
-      showAlert('sendError', 'Server error!');
-    }
-  };
+    await new Promise((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          document.getElementById('uploadBar').style.width = pct + '%';
+          document.getElementById('uploadLabel').textContent = `Uploading ${file.name}... ${pct}%`;
+        }
+      };
+      xhr.onload = () => { uploadedCount++; resolve(); };
+      xhr.onerror = () => resolve();
+      xhr.open('POST', `${API}/api/upload`);
+      xhr.send(formData);
+    });
+  }
 
-  xhr.onerror = () => {
-    document.getElementById('uploadProgress').style.display = 'none';
-    document.getElementById('sendBtn').disabled = false;
-    showAlert('sendError', 'Connection error!');
-  };
-
-  xhr.open('POST', `${API}/api/upload`);
-  xhr.send(formData);
+  document.getElementById('uploadProgress').style.display = 'none';
+  document.getElementById('sendBtn').disabled = false;
+  showAlert('sendSuccess', `✅ ${uploadedCount} file(s) uploaded! Share the token.`);
+  selectedFiles = [];
+  totalSize = 0;
+  renderFileList();
 }
 
 function readQRImage(input) {
@@ -828,8 +486,7 @@ function readQRImage(input) {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = img.width; canvas.height = img.height;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -857,7 +514,6 @@ function searchToken() {
 async function unlockToken() {
   const tokenPass = document.getElementById('receiveTokenPass').value;
   if (!tokenPass) { showAlert('receiveError', 'Enter token password!'); return; }
-
   try {
     const res = await fetch(`${API}/api/verify-token`, {
       method: 'POST',
@@ -884,41 +540,32 @@ function showFileReady(data) {
   document.getElementById('readyViews').textContent = data.viewLimit === 'unlimited' ? '∞' : `${data.viewCount}/${data.viewLimit}`;
   document.getElementById('readyDownloads').textContent = data.downloadLimit === 'unlimited' ? '∞' : `${data.downloadCount}/${data.downloadLimit}`;
   document.getElementById('readyMode').textContent = data.isMystery ? '🕵️ Mystery (Password Protected ZIP)' : '📂 Normal';
-  if (data.hasFilePassword) {
-    document.getElementById('downloadFilePass').style.display = 'block';
-  }
+  document.getElementById('downloadFilePassWrap').style.display = data.hasFilePassword ? 'block' : 'none';
 }
 
 async function downloadFile() {
   const filePass = document.getElementById('downloadFilePass').value;
   const tokenPass = document.getElementById('receiveTokenPass').value;
-
   try {
     const res = await fetch(`${API}/api/download`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: currentToken, tokenPassword: tokenPass, filePassword: filePass })
     });
-
     if (!res.ok) {
       const err = await res.json();
       showAlert('receiveError', err.error || 'Download failed!');
       return;
     }
-
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = verifiedTokenData?.isMystery
-      ? `zencrypt_pkg_${Date.now()}.zip`
-      : `zencrypt_file_${Date.now()}`;
+    a.download = verifiedTokenData?.isMystery ? `zencrypt_${Date.now()}.zip` : `zencrypt_file_${Date.now()}`;
     a.click();
     URL.revokeObjectURL(url);
-
     showAlert('receiveSuccess', '✅ Downloaded! File deletes from cloud in 5 seconds.');
     document.getElementById('fileReady').style.display = 'none';
-
   } catch {
     showAlert('receiveError', 'Connection error!');
   }
@@ -931,9 +578,7 @@ function showAlert(id, msg) {
   setTimeout(() => el.style.display = 'none', 6000);
 }
 
-function hideAlert(id) {
-  document.getElementById(id).style.display = 'none';
-}
+function hideAlert(id) { document.getElementById(id).style.display = 'none'; }
 
 window.onload = () => generateToken();
 </script>
