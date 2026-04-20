@@ -59,7 +59,7 @@ def get_upload_url(auth_token, api_url):
 def delete_from_b2(auth, b2_file_name, file_id):
     try:
         requests.post(
-            f'{auth["apiUrl"]}/b2api/v2/b2_delete_file_version',
+            f"{auth['apiUrl']}/b2api/v2/b2_delete_file_version",
             json={'fileName': b2_file_name, 'fileId': file_id},
             headers={'Authorization': auth['authorizationToken']}
         )
@@ -100,13 +100,18 @@ def api_upload():
 
         file_buffer = file.read()
         file_name = file.filename
+        is_mystery = mystery_mode and bool(file_password)
 
-        if mystery_mode and file_password:
+        if is_mystery:
+            # Mystery mode — password protected ZIP
             upload_buffer = create_protected_zip(file_buffer, file_name, file_password)
             upload_file_name = f'{token}/zencrypt_pkg_{int(time.time()*1000)}.zip'
+            stored_original_name = f'zencrypt_{secrets.token_hex(4)}.zip'
         else:
+            # Normal mode — original file as-is
             upload_buffer = file_buffer
             upload_file_name = f'{token}/{int(time.time()*1000)}_{file_name}'
+            stored_original_name = file_name
 
         auth = get_b2_auth()
         upload_url_data = get_upload_url(auth['authorizationToken'], auth['apiUrl'])
@@ -132,12 +137,12 @@ def api_upload():
         token_store[token] = {
             'token_pass_hash': token_pass_hash,
             'file_pass_hash': file_pass_hash,
-            'original_name': file_name,
+            'original_name': stored_original_name,
             'file_size': len(file_buffer),
             'b2_file_name': upload_file_name,
             'file_id': upload_data['fileId'],
             'expire_at': expire_at,
-            'is_mystery': mystery_mode and bool(file_password),
+            'is_mystery': is_mystery,
             'view_limit': 'unlimited' if view_limit == 'unlimited' else int(view_limit),
             'download_limit': 'unlimited' if download_limit == 'unlimited' else int(download_limit),
             'view_count': 0,
@@ -165,7 +170,6 @@ def api_verify_token():
     if time.time() > data['expire_at']:
         del token_store[token]
         return jsonify({'error': 'Token expired'}), 410
-
     if hash_password(token_password) != data['token_pass_hash']:
         return jsonify({'error': 'Wrong password'}), 401
 
@@ -213,11 +217,6 @@ def api_download():
         download_url = f"{auth['downloadUrl']}/file/{B2_BUCKET_NAME}/{requests.utils.quote(data['b2_file_name'])}"
         file_res = requests.get(download_url, headers={'Authorization': auth['authorizationToken']})
 
-        if data['is_mystery']:
-            download_name = f"zencrypt_{secrets.token_hex(4)}.zip"
-        else:
-            download_name = data['original_name']
-
         data['download_count'] += 1
 
         if data['download_limit'] != 'unlimited' and data['download_count'] >= data['download_limit']:
@@ -232,7 +231,7 @@ def api_download():
         return send_file(
             io.BytesIO(file_res.content),
             as_attachment=True,
-            download_name=download_name,
+            download_name=data['original_name'],
             mimetype='application/octet-stream'
         )
 
