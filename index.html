@@ -561,7 +561,7 @@ async function downloadFile() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = verifiedTokenData?.isMystery ? `zencrypt_${Date.now()}.zip` : `zencrypt_file_${Date.now()}`;
+    a.download = verifiedTokenData?.isMystery ? `zencrypt_${Date.now()}.zip` : (verifiedTokenData?.originalName || `zencrypt_file_${Date.now()}`);
     a.click();
     URL.revokeObjectURL(url);
     showAlert('receiveSuccess', '✅ Downloaded! File deletes from cloud in 5 seconds.');
