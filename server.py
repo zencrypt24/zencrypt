@@ -103,12 +103,10 @@ def api_upload():
         is_mystery = mystery_mode and bool(file_password)
 
         if is_mystery:
-            # Mystery mode — password protected ZIP
             upload_buffer = create_protected_zip(file_buffer, file_name, file_password)
             upload_file_name = f'{token}/zencrypt_pkg_{int(time.time()*1000)}.zip'
             stored_original_name = f'zencrypt_{secrets.token_hex(4)}.zip'
         else:
-            # Normal mode — original file as-is
             upload_buffer = file_buffer
             upload_file_name = f'{token}/{int(time.time()*1000)}_{file_name}'
             stored_original_name = file_name
@@ -181,6 +179,7 @@ def api_verify_token():
     return jsonify({
         'success': True,
         'fileSize': data['file_size'],
+        'originalName': data['original_name'],
         'hasFilePassword': bool(data['file_pass_hash']),
         'isMystery': data['is_mystery'],
         'expireAt': data['expire_at'] * 1000,
